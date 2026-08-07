@@ -41,6 +41,9 @@ const accounts = [
   ["Top Tier Louisville","toptieruofl"],
   ["Top Tier Miami","miamitate"],
   ["Top Tier Ole Miss","TopTierOleMiss"],
+  ["Top Tier SEC","sectoptier"],
+  ["Top Tier Utah","toptierutes"],
+  ["Top Tier Kentucky","toptierbbn"],
 ] as const;
 
 export function NetworkCarousel() {
