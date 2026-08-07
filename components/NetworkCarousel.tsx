@@ -49,8 +49,9 @@ const accounts = [
 export function NetworkCarousel() {
   const viewport = useRef<HTMLDivElement>(null);
   const paused = useRef(false);
+  const touching = useRef(false);
   const scrollPosition = useRef(0);
-  const resumeFrame = useRef<number | null>(null);
+  const resumeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [position, setPosition] = useState(0);
   const doubled = useMemo(() => [...accounts, ...accounts], []);
 
@@ -81,24 +82,23 @@ export function NetworkCarousel() {
     frame = requestAnimationFrame(tick);
     return () => {
       cancelAnimationFrame(frame);
-      if (resumeFrame.current !== null) {
-        cancelAnimationFrame(resumeFrame.current);
+      if (resumeTimer.current !== null) {
+        clearTimeout(resumeTimer.current);
       }
     };
   }, []);
 
-  const resumeFromTouchPosition = (el: HTMLDivElement) => {
-    if (resumeFrame.current !== null) {
-      cancelAnimationFrame(resumeFrame.current);
+  const resumeAfterTouchScroll = (el: HTMLDivElement) => {
+    if (resumeTimer.current !== null) {
+      clearTimeout(resumeTimer.current);
     }
 
-    // Mobile browsers commit the final native scroll position just after the
-    // pointer is released. Wait one frame so autoplay resumes from that spot.
-    resumeFrame.current = requestAnimationFrame(() => {
+    // Let native swipe momentum finish before autoplay takes control again.
+    resumeTimer.current = setTimeout(() => {
       scrollPosition.current = el.scrollLeft;
       paused.current = false;
-      resumeFrame.current = null;
-    });
+      resumeTimer.current = null;
+    }, 140);
   };
 
   const jump = (value: number) => {
@@ -131,27 +131,33 @@ export function NetworkCarousel() {
         }}
         onPointerDown={(event) => {
           if (event.pointerType !== "mouse") {
-            if (resumeFrame.current !== null) {
-              cancelAnimationFrame(resumeFrame.current);
-              resumeFrame.current = null;
+            if (resumeTimer.current !== null) {
+              clearTimeout(resumeTimer.current);
+              resumeTimer.current = null;
             }
+            touching.current = true;
             paused.current = true;
             scrollPosition.current = event.currentTarget.scrollLeft;
           }
         }}
         onPointerUp={(event) => {
           if (event.pointerType !== "mouse") {
-            resumeFromTouchPosition(event.currentTarget);
+            touching.current = false;
+            resumeAfterTouchScroll(event.currentTarget);
           }
         }}
         onPointerCancel={(event) => {
           if (event.pointerType !== "mouse") {
-            resumeFromTouchPosition(event.currentTarget);
+            touching.current = false;
+            resumeAfterTouchScroll(event.currentTarget);
           }
         }}
         onScroll={(event) => {
           if (paused.current) {
             scrollPosition.current = event.currentTarget.scrollLeft;
+            if (!touching.current) {
+              resumeAfterTouchScroll(event.currentTarget);
+            }
           }
         }}
       >
