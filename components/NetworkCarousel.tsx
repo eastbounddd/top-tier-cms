@@ -50,6 +50,7 @@ export function NetworkCarousel() {
   const viewport = useRef<HTMLDivElement>(null);
   const paused = useRef(false);
   const scrollPosition = useRef(0);
+  const resumeFrame = useRef<number | null>(null);
   const [position, setPosition] = useState(0);
   const doubled = useMemo(() => [...accounts, ...accounts], []);
 
@@ -78,8 +79,27 @@ export function NetworkCarousel() {
     };
 
     frame = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(frame);
+    return () => {
+      cancelAnimationFrame(frame);
+      if (resumeFrame.current !== null) {
+        cancelAnimationFrame(resumeFrame.current);
+      }
+    };
   }, []);
+
+  const resumeFromTouchPosition = (el: HTMLDivElement) => {
+    if (resumeFrame.current !== null) {
+      cancelAnimationFrame(resumeFrame.current);
+    }
+
+    // Mobile browsers commit the final native scroll position just after the
+    // pointer is released. Wait one frame so autoplay resumes from that spot.
+    resumeFrame.current = requestAnimationFrame(() => {
+      scrollPosition.current = el.scrollLeft;
+      paused.current = false;
+      resumeFrame.current = null;
+    });
+  };
 
   const jump = (value: number) => {
     const el = viewport.current;
@@ -111,19 +131,27 @@ export function NetworkCarousel() {
         }}
         onPointerDown={(event) => {
           if (event.pointerType !== "mouse") {
+            if (resumeFrame.current !== null) {
+              cancelAnimationFrame(resumeFrame.current);
+              resumeFrame.current = null;
+            }
             paused.current = true;
+            scrollPosition.current = event.currentTarget.scrollLeft;
           }
         }}
         onPointerUp={(event) => {
           if (event.pointerType !== "mouse") {
-            scrollPosition.current = event.currentTarget.scrollLeft;
-            paused.current = false;
+            resumeFromTouchPosition(event.currentTarget);
           }
         }}
         onPointerCancel={(event) => {
           if (event.pointerType !== "mouse") {
+            resumeFromTouchPosition(event.currentTarget);
+          }
+        }}
+        onScroll={(event) => {
+          if (paused.current) {
             scrollPosition.current = event.currentTarget.scrollLeft;
-            paused.current = false;
           }
         }}
       >
