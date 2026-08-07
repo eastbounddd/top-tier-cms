@@ -100,11 +100,12 @@ export function NetworkCarousel() {
       <div
         ref={viewport}
         className="network-viewport"
-        onMouseEnter={() => (paused.current = true)}
-        onMouseLeave={() => (paused.current = false)}
-        onPointerDown={() => (paused.current = true)}
-        onPointerUp={() => (paused.current = false)}
-        onPointerCancel={() => (paused.current = false)}
+        onPointerEnter={(event) => {
+          if (event.pointerType === "mouse") paused.current = true;
+        }}
+        onPointerLeave={(event) => {
+          if (event.pointerType === "mouse") paused.current = false;
+        }}
       >
         <div className="network-track">
           {doubled.map(([name, handle], i) => (
