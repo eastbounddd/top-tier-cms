@@ -475,6 +475,10 @@
   color: #333a42;
 }
 
+.article-page .byline strong {
+  color: inherit;
+}
+
 .article-page .article-kicker {
   color: #c91e32;
 }
