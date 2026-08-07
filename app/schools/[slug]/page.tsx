@@ -4,6 +4,7 @@ import { Footer } from "@/components/Footer";
 import { ArticleCard } from "@/components/ArticleCard";
 import { createClient } from "@/lib/supabase/server";
 import { getSchoolBySlug, schools } from "@/lib/schools";
+import { XAccountLink } from "@/components/XAccountLink";
 
 export const generateStaticParams = () => schools.map(({ slug }) => ({ slug }));
 
@@ -29,7 +30,10 @@ export default async function SchoolPage({ params }: { params: Promise<{ slug: s
           src={`/api/x-avatar?handle=${encodeURIComponent(school.xHandle)}`}
           alt={`${school.name} X account logo`}
         />
-        <small>TOP TIER SCHOOL COVERAGE</small>
+        <div className="school-kicker-row">
+          <small>TOP TIER SCHOOL COVERAGE</small>
+          <XAccountLink handle={school.xHandle} />
+        </div>
         <h1>{school.name}</h1>
         <p>The latest {school.name} news, analysis, and original reporting.</p>
       </div>
