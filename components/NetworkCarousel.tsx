@@ -50,7 +50,6 @@ export function NetworkCarousel() {
   const viewport = useRef<HTMLDivElement>(null);
   const paused = useRef(false);
   const scrollPosition = useRef(0);
-  const touchStart = useRef<{ x: number; wasPaused: boolean } | null>(null);
   const [position, setPosition] = useState(0);
   const doubled = useMemo(() => [...accounts, ...accounts], []);
 
@@ -112,26 +111,19 @@ export function NetworkCarousel() {
         }}
         onPointerDown={(event) => {
           if (event.pointerType !== "mouse") {
-            touchStart.current = {
-              x: event.clientX,
-              wasPaused: paused.current,
-            };
             paused.current = true;
           }
         }}
         onPointerUp={(event) => {
-          if (event.pointerType !== "mouse" && touchStart.current) {
-            const moved = Math.abs(event.clientX - touchStart.current.x) > 8;
+          if (event.pointerType !== "mouse") {
             scrollPosition.current = event.currentTarget.scrollLeft;
-            paused.current = moved ? true : !touchStart.current.wasPaused;
-            touchStart.current = null;
+            paused.current = false;
           }
         }}
         onPointerCancel={(event) => {
           if (event.pointerType !== "mouse") {
             scrollPosition.current = event.currentTarget.scrollLeft;
-            paused.current = true;
-            touchStart.current = null;
+            paused.current = false;
           }
         }}
       >
@@ -171,6 +163,15 @@ export function NetworkCarousel() {
           value={position}
           onPointerDown={() => {
             paused.current = true;
+          }}
+          onPointerUp={() => {
+            paused.current = false;
+          }}
+          onPointerCancel={() => {
+            paused.current = false;
+          }}
+          onBlur={() => {
+            paused.current = false;
           }}
           onChange={(e) => jump(Number(e.target.value))}
         />
