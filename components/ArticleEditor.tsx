@@ -305,7 +305,11 @@ const deleteArticle = async () => {
       slug: form.slug || slugify(form.title),
       status,
       author_id: user.id,
-      body: { html: editor.current?.innerHTML || editorHtml || "" },
+      body: {
+  html: (editor.current?.innerHTML || editorHtml || "")
+    .replace(/<h1\b[^>]*>/gi, "")
+    .replace(/<\/h1>/gi, "")
+},
     };
 
     if (status === "published") {

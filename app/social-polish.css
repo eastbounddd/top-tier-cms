@@ -506,3 +506,228 @@
   opacity: 0.6;
   cursor: not-allowed;
 }
+/* =========================================================
+   FINAL ARTICLE TYPOGRAPHY FIX
+   Published article pages ONLY
+   ========================================================= */
+
+.article-page {
+  background: #f7f5f0 !important;
+  color: #111820 !important;
+  max-width: 1080px !important;
+  margin: 0 auto !important;
+  padding: 55px 48px 90px !important;
+}
+
+/* Force normal article body typography even if old HTML
+   accidentally contains an H1 wrapper */
+.article-page .prose,
+.article-page .prose h1,
+.article-page .prose p,
+.article-page .prose li,
+.article-page .prose span,
+.article-page .prose div {
+  font-family: Arial, Helvetica, sans-serif !important;
+  font-size: 20px !important;
+  line-height: 1.68 !important;
+  font-weight: 400 !important;
+  text-transform: none !important;
+  letter-spacing: normal !important;
+  color: #111820 !important;
+}
+
+/* Body width like the old site */
+.article-page .prose {
+  max-width: 820px !important;
+  margin: 40px 0 0 !important;
+}
+
+/* Paragraph spacing */
+.article-page .prose p {
+  margin: 0 0 22px !important;
+}
+
+/* Keep bold text bold, but not huge */
+.article-page .prose strong,
+.article-page .prose b {
+  font-family: Arial, Helvetica, sans-serif !important;
+  font-size: inherit !important;
+  line-height: inherit !important;
+  font-weight: 700 !important;
+  text-transform: none !important;
+}
+
+/* Real section headings keep the condensed Top Tier look */
+.article-page .prose h2,
+.article-page .prose h3 {
+  font-family: "Barlow Condensed", "Arial Narrow", Arial, sans-serif !important;
+  font-weight: 800 !important;
+  text-transform: uppercase !important;
+  color: #111820 !important;
+}
+
+.article-page .prose h2 {
+  font-size: 28px !important;
+  line-height: 1.05 !important;
+  margin: 30px 0 20px !important;
+}
+
+.article-page .prose h3 {
+  font-size: 24px !important;
+  line-height: 1.1 !important;
+  margin: 28px 0 16px !important;
+}
+
+.article-page .prose a {
+  font-family: Arial, Helvetica, sans-serif !important;
+  font-size: inherit !important;
+  font-weight: inherit !important;
+  text-transform: none !important;
+}
+
+/* Images and videos */
+.article-page .prose img,
+.article-page .prose video {
+  display: block !important;
+  max-width: 100% !important;
+  height: auto !important;
+  margin: 30px auto !important;
+}
+
+@media (max-width: 700px) {
+  .article-page {
+    padding: 34px 22px 60px !important;
+  }
+
+  .article-page .prose,
+  .article-page .prose h1,
+  .article-page .prose p,
+  .article-page .prose li,
+  .article-page .prose span,
+  .article-page .prose div {
+    font-size: 18px !important;
+    line-height: 1.65 !important;
+  }
+
+  .article-page .prose h2 {
+    font-size: 25px !important;
+  }
+}/* =========================================================
+   CMS ARTICLE EDITOR + LIVE PREVIEW
+   Match the published article typography
+   ========================================================= */
+
+/* Main writing area */
+.rich-editor {
+  font-family: Arial, Helvetica, sans-serif !important;
+  font-size: 20px !important;
+  line-height: 1.68 !important;
+  font-weight: 400 !important;
+  text-transform: none !important;
+  letter-spacing: normal !important;
+  color: #111820 !important;
+}
+
+/* Normal paragraphs inside editor */
+.rich-editor p,
+.rich-editor div,
+.rich-editor span,
+.rich-editor li {
+  font-family: Arial, Helvetica, sans-serif !important;
+  font-size: 20px !important;
+  line-height: 1.68 !important;
+  font-weight: 400 !important;
+  text-transform: none !important;
+  letter-spacing: normal !important;
+  color: #111820 !important;
+}
+
+/* Prevent accidental H1 wrappers from looking enormous */
+.rich-editor h1 {
+  font-family: Arial, Helvetica, sans-serif !important;
+  font-size: 20px !important;
+  line-height: 1.68 !important;
+  font-weight: 400 !important;
+  text-transform: none !important;
+}
+
+/* Actual section headings */
+.rich-editor h2,
+.rich-editor h3 {
+  font-family: "Barlow Condensed", "Arial Narrow", Arial, sans-serif !important;
+  font-weight: 800 !important;
+  text-transform: uppercase !important;
+  color: #111820 !important;
+}
+
+.rich-editor h2 {
+  font-size: 28px !important;
+  line-height: 1.05 !important;
+  margin: 30px 0 20px !important;
+}
+
+.rich-editor h3 {
+  font-size: 24px !important;
+}
+
+
+/* =========================================================
+   RIGHT-SIDE BODY PREVIEW
+   ========================================================= */
+
+.preview-prose {
+  font-family: Arial, Helvetica, sans-serif !important;
+  font-size: 18px !important;
+  line-height: 1.65 !important;
+  font-weight: 400 !important;
+  text-transform: none !important;
+  letter-spacing: normal !important;
+  color: #111820 !important;
+}
+
+/* Normal preview paragraphs */
+.preview-prose p,
+.preview-prose div,
+.preview-prose span,
+.preview-prose li,
+.preview-prose h1 {
+  font-family: Arial, Helvetica, sans-serif !important;
+  font-size: 18px !important;
+  line-height: 1.65 !important;
+  font-weight: 400 !important;
+  text-transform: none !important;
+  letter-spacing: normal !important;
+  color: #111820 !important;
+}
+
+.preview-prose p {
+  margin: 0 0 18px !important;
+}
+
+/* Preview section headings match published article */
+.preview-prose h2,
+.preview-prose h3 {
+  font-family: "Barlow Condensed", "Arial Narrow", Arial, sans-serif !important;
+  font-weight: 800 !important;
+  text-transform: uppercase !important;
+  color: #111820 !important;
+}
+
+.preview-prose h2 {
+  font-size: 24px !important;
+  line-height: 1.08 !important;
+  margin: 24px 0 16px !important;
+}
+
+.preview-prose h3 {
+  font-size: 21px !important;
+}
+
+/* Bold text */
+.rich-editor strong,
+.rich-editor b,
+.preview-prose strong,
+.preview-prose b {
+  font-family: Arial, Helvetica, sans-serif !important;
+  font-weight: 700 !important;
+}
