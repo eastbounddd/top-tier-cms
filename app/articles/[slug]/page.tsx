@@ -52,7 +52,11 @@ export async function generateMetadata({
       description,
       url: canonical,
       publishedTime: data.published_at || undefined,
-      authors: [(data.profiles as any)?.display_name || "Top Tier"],
+      authors: [
+        (typeof data.body === "object" && data.body?.author_name) ||
+          (data.profiles as any)?.display_name ||
+          "Top Tier",
+      ],
       section: data.category,
       images: [
         {
@@ -87,7 +91,10 @@ export default async function ArticlePage({
       ? data.body.html
       : String(data.body ?? "");
 
-  const author = (data.profiles as any)?.display_name || "Top Tier";
+  const author =
+    (typeof data.body === "object" && data.body?.author_name) ||
+    (data.profiles as any)?.display_name ||
+    "Top Tier";
   const published = data.published_at
     ? new Date(data.published_at).toLocaleDateString("en-US", {
         month: "long",

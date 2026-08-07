@@ -44,6 +44,7 @@ export function ArticleEditor() {
     status: "draft",
   });
   const [editorHtml, setEditorHtml] = useState("");
+  const [authorName, setAuthorName] = useState("");
   const [busy, setBusy] = useState(false);
   const [uploading, setUploading] = useState("");
   const [message, setMessage] = useState("");
@@ -79,6 +80,9 @@ export function ArticleEditor() {
             ? data.body.html
             : String(data.body || "");
 
+        setAuthorName(
+          typeof data.body === "object" ? data.body?.author_name || "" : ""
+        );
         setEditorHtml(html);
         requestAnimationFrame(() => {
           if (editor.current) editor.current.innerHTML = html;
@@ -286,6 +290,11 @@ const deleteArticle = async () => {
       return;
     }
 
+    if (!authorName.trim()) {
+      setMessage("Please enter the author name.");
+      return;
+    }
+
     setBusy(true);
     setMessage("");
 
@@ -306,10 +315,11 @@ const deleteArticle = async () => {
       status,
       author_id: user.id,
       body: {
-  html: (editor.current?.innerHTML || editorHtml || "")
-    .replace(/<h1\b[^>]*>/gi, "")
-    .replace(/<\/h1>/gi, "")
-},
+        html: (editor.current?.innerHTML || editorHtml || "")
+          .replace(/<h1\b[^>]*>/gi, "")
+          .replace(/<\/h1>/gi, ""),
+        author_name: authorName.trim(),
+      },
     };
 
     if (status === "published") {
@@ -406,6 +416,16 @@ const deleteArticle = async () => {
             }
             maxLength={260}
             placeholder="Short description shown on story cards and social previews."
+          />
+        </label>
+
+        <label>
+          Author Name
+          <input
+            required
+            value={authorName}
+            onChange={(e) => setAuthorName(e.target.value)}
+            placeholder="Name shown on the published article"
           />
         </label>
 
