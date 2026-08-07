@@ -1,16 +1,16 @@
 export const schools = [
-  { name: "Auburn", slug: "auburn" },
-  { name: "Arkansas", slug: "arkansas" },
-  { name: "Utah", slug: "utah" },
-  { name: "Florida State", slug: "fsu" },
-  { name: "Michigan", slug: "michigan" },
-  { name: "Tulane", slug: "tulane" },
-  { name: "Georgia", slug: "georgia" },
-  { name: "Baylor", slug: "baylor" },
-  { name: "Vanderbilt", slug: "vanderbilt" },
-  { name: "Oklahoma", slug: "oklahoma" },
-  { name: "Alabama", slug: "alabama" },
-  { name: "BYU", slug: "byu" },
+  { name: "Auburn", slug: "auburn", xHandle: "toptierauburn" },
+  { name: "Arkansas", slug: "arkansas", xHandle: "toptierarkansas" },
+  { name: "Utah", slug: "utah", xHandle: "toptierutes" },
+  { name: "Florida State", slug: "fsu", xHandle: "toptiernoles" },
+  { name: "Michigan", slug: "michigan", xHandle: "toptieruofm" },
+  { name: "Tulane", slug: "tulane", xHandle: "toptiertulane" },
+  { name: "Georgia", slug: "georgia", xHandle: "toptieruga" },
+  { name: "Baylor", slug: "baylor", xHandle: "toptierbaylor" },
+  { name: "Vanderbilt", slug: "vanderbilt", xHandle: "toptiervandy" },
+  { name: "Oklahoma", slug: "oklahoma", xHandle: "toptieroklahoma" },
+  { name: "Alabama", slug: "alabama", xHandle: "toptieralabama" },
+  { name: "BYU", slug: "byu", xHandle: "toptiercougs" },
 ] as const;
 
 export const getSchoolBySlug = (slug: string) =>

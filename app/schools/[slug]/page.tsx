@@ -24,6 +24,11 @@ export default async function SchoolPage({ params }: { params: Promise<{ slug: s
     <Header />
     <main className="school-page shell">
       <div className="schools-heading">
+        <img
+          className="school-page-logo"
+          src={`/api/x-avatar?handle=${encodeURIComponent(school.xHandle)}`}
+          alt={`${school.name} X account logo`}
+        />
         <small>TOP TIER SCHOOL COVERAGE</small>
         <h1>{school.name}</h1>
         <p>The latest {school.name} news, analysis, and original reporting.</p>

@@ -20,6 +20,10 @@ export default function SchoolsPage() {
       <div className="schools-grid">
         {schools.map((school) => (
           <Link key={school.slug} href={`/schools/${school.slug}`} className="school-link-card">
+            <img
+              src={`/api/x-avatar?handle=${encodeURIComponent(school.xHandle)}`}
+              alt={`${school.name} X account logo`}
+            />
             <span>School Coverage</span>
             <h2>{school.name}</h2>
             <b>View Articles →</b>
