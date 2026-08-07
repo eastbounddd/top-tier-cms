@@ -272,3 +272,237 @@
   .article-share-label{padding-bottom:16px}
   .prose{font-size:18px;line-height:1.75}
 }
+
+
+/* ===== Top Tier repair: carousel + editor + media preview ===== */
+
+.network-card img{
+  flex:none;
+  width:78px;
+  height:78px;
+  border-radius:50%;
+  object-fit:cover;
+  object-position:center;
+  background:#fff;
+  border:2px solid rgba(255,255,255,.12);
+  box-shadow:0 6px 20px rgba(0,0,0,.28);
+}
+
+.network-card{
+  min-height:186px;
+  border-radius:3px;
+}
+
+.network-card:hover img{
+  transform:scale(1.035);
+}
+
+.preview{
+  overflow-y:auto;
+  height:100vh;
+}
+
+.preview-image{
+  width:100%;
+  aspect-ratio:16/9;
+  height:auto!important;
+  background:#0c0f12!important;
+}
+
+.preview-image img{
+  display:block;
+  width:100%;
+  height:100%;
+  object-fit:contain;
+}
+
+.preview-body{
+  margin-top:30px;
+  padding-top:24px;
+  border-top:1px solid #333944;
+}
+
+.preview-body-label{
+  margin-bottom:13px;
+  color:#858c98;
+  font:800 11px 'Barlow Condensed';
+  letter-spacing:1.2px;
+}
+
+.preview-prose{
+  padding:18px;
+  background:#fff;
+  color:#16181b;
+  font:15px/1.62 Georgia,serif;
+  border:1px solid #d6d9df;
+}
+
+.preview-prose p{
+  margin:0 0 1em;
+}
+
+.preview-prose h2{
+  font:800 25px/1.05 'Barlow Condensed';
+  text-transform:uppercase;
+}
+
+.preview-prose img,
+.preview-prose video{
+  display:block;
+  max-width:100%;
+  height:auto;
+  max-height:330px;
+  object-fit:contain;
+  margin:16px auto;
+  background:#0d1013;
+}
+
+.preview-prose a{
+  color:#b5172c;
+  text-decoration:underline;
+  overflow-wrap:anywhere;
+}
+
+.preview-prose .twitter-tweet{
+  margin:16px 0;
+  padding:14px;
+  border:1px solid #d7dce3;
+  border-radius:10px;
+  background:#f7f9fb;
+  font-family:Inter,Arial,sans-serif;
+}
+
+.preview-empty{
+  color:#7e8590;
+  font-size:13px;
+  line-height:1.5;
+}
+
+.editor-uploading{
+  margin:14px 0 0;
+  color:#ffca62;
+  font-weight:700;
+}
+
+.editor-message{
+  margin:14px 0 0;
+  padding:11px 13px;
+  border:1px solid #343b46;
+  background:#15191e;
+  color:#d6dae0;
+  line-height:1.45;
+}
+
+.rich-editor a{
+  color:#b5172c;
+  text-decoration:underline;
+}
+
+.rich-editor figure.article-media-block{
+  margin:30px 0;
+}
+
+.rich-editor img,
+.rich-editor video{
+  display:block;
+  width:100%;
+  max-height:720px;
+  object-fit:contain;
+  background:#0d1013;
+}
+
+.prose .article-media-block{
+  margin:34px 0;
+}
+
+.prose .article-media-block img,
+.prose .article-media-block video{
+  margin:0 auto;
+}
+
+.prose .twitter-tweet{
+  margin:32px auto!important;
+}
+
+@media(max-width:900px){
+  .preview{
+    display:block;
+    position:relative;
+    height:auto;
+    border-left:0;
+    border-top:1px solid #353a44;
+  }
+
+  .editor-layout{
+    grid-template-columns:1fr;
+  }
+}
+/* ===== Article reading page only ===== */
+/* Do not affect homepage, dashboard, cards or CMS */
+
+.article-page {
+  background: #f7f5f0;
+  color: #111820;
+  padding: 56px 48px 80px;
+}
+
+.article-page .prose {
+  color: #111820;
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 20px;
+  line-height: 1.68;
+}
+
+.article-page .prose p,
+.article-page .prose li {
+  font-family: Arial, Helvetica, sans-serif;
+  color: #111820;
+}
+
+.article-page .prose h1,
+.article-page .prose h2,
+.article-page .prose h3,
+.article-page > h1 {
+  font-family: "Barlow Condensed", Arial, sans-serif;
+  font-weight: 800;
+  color: #111820;
+}
+
+.article-page .article-deck,
+.article-page .article-info,
+.article-page .byline {
+  font-family: Arial, Helvetica, sans-serif;
+  color: #333a42;
+}
+
+.article-page .article-kicker {
+  color: #c91e32;
+}
+
+@media (max-width: 700px) {
+  .article-page {
+    padding: 34px 22px 60px;
+  }
+
+  .article-page .prose {
+    font-size: 18px;
+    line-height: 1.65;
+  }
+}.delete-button {
+  background: #b91c1c;
+  color: #fff;
+  border: 1px solid #991b1b;
+  padding: 0.8rem 1.4rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: 0.2s ease;
+}
+
+.delete-button:hover {
+  background: #991b1b;
+}
+
+.delete-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
