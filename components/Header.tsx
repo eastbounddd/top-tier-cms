@@ -20,7 +20,7 @@ export function Header() {
         <Link href="/#top-stories" onClick={() => setMenuOpen(false)}>Top Stories</Link>
         <Link href="/#college-football" onClick={() => setMenuOpen(false)}>College Football</Link>
         <Link href="/#other-news" onClick={() => setMenuOpen(false)}>Other News</Link>
-        <Link href="/#schools" onClick={() => setMenuOpen(false)}>Schools</Link>
+        <Link href="/schools" onClick={() => setMenuOpen(false)}>Schools</Link>
         <a href="https://play.underdogsports.com/vgwg/p-ttm" onClick={() => setMenuOpen(false)}>Underdog</a>
       </nav>}
     </header>

@@ -112,7 +112,7 @@ export function NetworkCarousel() {
   };
 
   return (
-    <section id="schools" className="network-section">
+    <section className="network-section">
       <div className="shell section-row">
         <div>
           <small>THE TOP TIER NETWORK</small>

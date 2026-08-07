@@ -9,6 +9,7 @@ import {
 } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { schools } from "@/lib/schools";
 
 const slugify = (s: string) =>
   s
@@ -22,6 +23,7 @@ type FormState = {
   slug: string;
   excerpt: string;
   category: string;
+  school: string;
   cover_image_url: string;
   is_top_story: boolean;
   status: string;
@@ -39,6 +41,7 @@ export function ArticleEditor() {
     slug: "",
     excerpt: "",
     category: "College Football",
+    school: "",
     cover_image_url: "",
     is_top_story: false,
     status: "draft",
@@ -70,6 +73,7 @@ export function ArticleEditor() {
           slug: data.slug || "",
           excerpt: data.excerpt || "",
           category: data.category || "College Football",
+          school: data.school || "",
           cover_image_url: data.cover_image_url || "",
           is_top_story: Boolean(data.is_top_story),
           status: data.status || "draft",
@@ -393,6 +397,21 @@ const deleteArticle = async () => {
               <option>Transfer Portal</option>
               <option>Coaching</option>
               <option>Other News</option>
+            </select>
+          </label>
+
+          <label>
+            School
+            <select
+              value={form.school}
+              onChange={(e) =>
+                setForm((f) => ({ ...f, school: e.target.value }))
+              }
+            >
+              <option value="">No school</option>
+              {schools.map((school) => (
+                <option key={school.slug} value={school.name}>{school.name}</option>
+              ))}
             </select>
           </label>
 
