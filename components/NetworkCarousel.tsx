@@ -92,7 +92,6 @@ export function NetworkCarousel() {
           <small>THE TOP TIER NETWORK</small>
           <h2>Follow Every Top Tier Account</h2>
         </div>
-        <span>Hover to pause · Every card opens the official X account</span>
       </div>
 
       <div
