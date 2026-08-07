@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import "./social-polish.css";
 
 export const metadata: Metadata = {
   title: { default: "Top Tier | College Football News", template: "%s | Top Tier" },
