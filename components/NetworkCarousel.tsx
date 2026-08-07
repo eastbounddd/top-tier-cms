@@ -129,28 +129,22 @@ export function NetworkCarousel() {
         onPointerLeave={(event) => {
           if (event.pointerType === "mouse") paused.current = false;
         }}
-        onPointerDown={(event) => {
-          if (event.pointerType !== "mouse") {
-            if (resumeTimer.current !== null) {
-              clearTimeout(resumeTimer.current);
-              resumeTimer.current = null;
-            }
-            touching.current = true;
-            paused.current = true;
-            scrollPosition.current = event.currentTarget.scrollLeft;
+        onTouchStart={(event) => {
+          if (resumeTimer.current !== null) {
+            clearTimeout(resumeTimer.current);
+            resumeTimer.current = null;
           }
+          touching.current = true;
+          paused.current = true;
+          scrollPosition.current = event.currentTarget.scrollLeft;
         }}
-        onPointerUp={(event) => {
-          if (event.pointerType !== "mouse") {
-            touching.current = false;
-            resumeAfterTouchScroll(event.currentTarget);
-          }
+        onTouchEnd={(event) => {
+          touching.current = false;
+          resumeAfterTouchScroll(event.currentTarget);
         }}
-        onPointerCancel={(event) => {
-          if (event.pointerType !== "mouse") {
-            touching.current = false;
-            resumeAfterTouchScroll(event.currentTarget);
-          }
+        onTouchCancel={(event) => {
+          touching.current = false;
+          resumeAfterTouchScroll(event.currentTarget);
         }}
         onScroll={(event) => {
           if (paused.current) {
