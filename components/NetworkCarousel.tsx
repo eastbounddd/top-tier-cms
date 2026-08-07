@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef } from "react";
 
 const accounts = [
   ["Top Tier","toptierstatex"],
@@ -48,16 +48,17 @@ const accounts = [
 
 export function NetworkCarousel() {
   const viewport = useRef<HTMLDivElement>(null);
+  const scrubber = useRef<HTMLInputElement>(null);
   const paused = useRef(false);
   const touching = useRef(false);
   const scrollPosition = useRef(0);
   const resumeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const [position, setPosition] = useState(0);
   const doubled = useMemo(() => [...accounts, ...accounts], []);
 
   useEffect(() => {
     let frame = 0;
     let previous = performance.now();
+    let lastScrubberUpdate = 0;
 
     const tick = (now: number) => {
       const el = viewport.current;
@@ -72,7 +73,12 @@ export function NetworkCarousel() {
 
         if (midpoint > 0) {
           el.scrollLeft = scrollPosition.current;
-          setPosition(Math.round((scrollPosition.current / midpoint) * 1000));
+          if (scrubber.current && now - lastScrubberUpdate >= 100) {
+            scrubber.current.value = String(
+              Math.round((scrollPosition.current / midpoint) * 1000)
+            );
+            lastScrubberUpdate = now;
+          }
         }
       }
       previous = now;
@@ -103,7 +109,6 @@ export function NetworkCarousel() {
 
   const jump = (value: number) => {
     const el = viewport.current;
-    setPosition(value);
     if (el) {
       const midpoint = el.scrollWidth / 2;
       scrollPosition.current = (value / 1000) * midpoint;
@@ -184,11 +189,12 @@ export function NetworkCarousel() {
       <div className="shell scrub">
         <span>DRAG TO JUMP</span>
         <input
+          ref={scrubber}
           aria-label="Jump through Top Tier X accounts"
           type="range"
           min="0"
           max="1000"
-          value={position}
+          defaultValue="0"
           onPointerDown={() => {
             paused.current = true;
           }}
