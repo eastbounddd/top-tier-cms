@@ -49,6 +49,8 @@ const accounts = [
 export function NetworkCarousel() {
   const viewport = useRef<HTMLDivElement>(null);
   const paused = useRef(false);
+  const scrollPosition = useRef(0);
+  const touchStart = useRef<{ x: number; wasPaused: boolean } | null>(null);
   const [position, setPosition] = useState(0);
   const doubled = useMemo(() => [...accounts, ...accounts], []);
 
@@ -60,15 +62,16 @@ export function NetworkCarousel() {
       const el = viewport.current;
       if (el && !paused.current) {
         const delta = Math.min(40, now - previous);
-        el.scrollLeft += delta * 0.045;
+        scrollPosition.current += delta * 0.045;
 
         const midpoint = el.scrollWidth / 2;
-        if (midpoint > 0 && el.scrollLeft >= midpoint) {
-          el.scrollLeft -= midpoint;
+        if (midpoint > 0 && scrollPosition.current >= midpoint) {
+          scrollPosition.current -= midpoint;
         }
 
         if (midpoint > 0) {
-          setPosition(Math.round((el.scrollLeft / midpoint) * 1000));
+          el.scrollLeft = scrollPosition.current;
+          setPosition(Math.round((scrollPosition.current / midpoint) * 1000));
         }
       }
       previous = now;
@@ -84,7 +87,8 @@ export function NetworkCarousel() {
     setPosition(value);
     if (el) {
       const midpoint = el.scrollWidth / 2;
-      el.scrollLeft = (value / 1000) * midpoint;
+      scrollPosition.current = (value / 1000) * midpoint;
+      el.scrollLeft = scrollPosition.current;
     }
   };
 
@@ -105,6 +109,30 @@ export function NetworkCarousel() {
         }}
         onPointerLeave={(event) => {
           if (event.pointerType === "mouse") paused.current = false;
+        }}
+        onPointerDown={(event) => {
+          if (event.pointerType !== "mouse") {
+            touchStart.current = {
+              x: event.clientX,
+              wasPaused: paused.current,
+            };
+            paused.current = true;
+          }
+        }}
+        onPointerUp={(event) => {
+          if (event.pointerType !== "mouse" && touchStart.current) {
+            const moved = Math.abs(event.clientX - touchStart.current.x) > 8;
+            scrollPosition.current = event.currentTarget.scrollLeft;
+            paused.current = moved ? true : !touchStart.current.wasPaused;
+            touchStart.current = null;
+          }
+        }}
+        onPointerCancel={(event) => {
+          if (event.pointerType !== "mouse") {
+            scrollPosition.current = event.currentTarget.scrollLeft;
+            paused.current = true;
+            touchStart.current = null;
+          }
         }}
       >
         <div className="network-track">
@@ -141,6 +169,9 @@ export function NetworkCarousel() {
           min="0"
           max="1000"
           value={position}
+          onPointerDown={() => {
+            paused.current = true;
+          }}
           onChange={(e) => jump(Number(e.target.value))}
         />
       </div>
