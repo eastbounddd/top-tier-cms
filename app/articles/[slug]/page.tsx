@@ -139,8 +139,8 @@ export default async function ArticlePage({
         <div className="article-info">
           <div className="byline">
             By <strong>{author}</strong>
-            {published ? ` · ${published}` : ""}
           </div>
+          {published && <div className="article-date">{published}</div>}
           <div className="article-share-label">TOPTIERSTATE.NET</div>
         </div>
 
