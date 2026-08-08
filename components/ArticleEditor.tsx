@@ -10,7 +10,7 @@ import {
 import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { schools } from "@/lib/schools";
-import { createXEmbedHtml, normalizeXEmbeds, xPostUrlPattern } from "@/lib/xEmbeds";
+import { createXEditorBlockHtml, prepareXEmbedsForEditor, xPostUrlPattern } from "@/lib/xEmbeds";
 import { XEmbedContent } from "@/components/XEmbedContent";
 
 const slugify = (s: string) =>
@@ -81,10 +81,11 @@ export function ArticleEditor() {
           status: data.status || "draft",
         });
 
-        const html =
+        const storedHtml =
           typeof data.body === "object" && data.body?.html
             ? data.body.html
             : String(data.body || "");
+        const html = prepareXEmbedsForEditor(storedHtml);
 
         setAuthorName(
           typeof data.body === "object" ? data.body?.author_name || "" : ""
@@ -246,7 +247,7 @@ export function ArticleEditor() {
     if (!xPostUrlPattern.test(pastedText)) return;
 
     event.preventDefault();
-    insertHtmlAtCursor(`${createXEmbedHtml(pastedText)}<p><br></p>`);
+    insertHtmlAtCursor(`${createXEditorBlockHtml(pastedText)}<p><br></p>`);
     setMessage("X post embedded at the current position.");
   };
 const deleteArticle = async () => {
@@ -309,7 +310,7 @@ const deleteArticle = async () => {
       status,
       author_id: user.id,
       body: {
-        html: normalizeXEmbeds(
+        html: prepareXEmbedsForEditor(
           (editor.current?.innerHTML || editorHtml || "")
             .replace(/<h1\b[^>]*>/gi, "")
             .replace(/<\/h1>/gi, "")

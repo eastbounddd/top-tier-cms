@@ -159,7 +159,7 @@ export default async function ArticlePage({
           </div>
         )}
 
-        <XEmbedContent html={body} className="prose" />
+        <XEmbedContent html={body} className="prose article-body" />
       </main>
 
       <Footer />
