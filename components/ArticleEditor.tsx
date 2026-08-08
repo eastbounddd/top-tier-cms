@@ -11,6 +11,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { schools } from "@/lib/schools";
 import { RenderedArticleContent } from "@/components/RenderedArticleContent";
+import { isXStatusUrl, renderStandaloneXLinks } from "@/lib/renderXLinks";
 
 const slugify = (s: string) =>
   s
@@ -36,6 +37,7 @@ export function ArticleEditor() {
   const router = useRouter();
   const editor = useRef<HTMLDivElement>(null);
   const savedRange = useRef<Range | null>(null);
+  const editorXTimers = useRef<number[]>([]);
 
   const [form, setForm] = useState<FormState>({
     title: "",
@@ -90,7 +92,13 @@ export function ArticleEditor() {
         );
         setEditorHtml(html);
         requestAnimationFrame(() => {
-          if (editor.current) editor.current.innerHTML = html;
+          if (editor.current) {
+            editor.current.innerHTML = renderStandaloneXLinks(html).replaceAll(
+              'class="x-post-embed"',
+              'class="x-editor-tweet-preview" contenteditable="false"'
+            );
+            loadEditorXPreviews();
+          }
         });
       });
   }, [id]);
@@ -112,6 +120,8 @@ export function ArticleEditor() {
     return () =>
       document.removeEventListener("selectionchange", rememberSelection);
   }, []);
+
+  useEffect(() => () => editorXTimers.current.forEach(window.clearTimeout), []);
 
   const restoreSelection = () => {
     editor.current?.focus();
@@ -166,8 +176,55 @@ export function ArticleEditor() {
   const insertHtmlAtCursor = (html: string) => {
     restoreSelection();
     document.execCommand("insertHTML", false, html);
-    const next = editor.current?.innerHTML || "";
-    setEditorHtml(next);
+    setEditorHtml(serializeEditorHtml());
+  };
+
+  const escapeAttribute = (value: string) =>
+    value.replace(/&/g, "&amp;").replace(/"/g, "&quot;");
+
+  const createEditorXPreview = (url: string) => {
+    const safeUrl = escapeAttribute(url);
+    return `<div class="x-editor-tweet-preview" contenteditable="false" data-x-url="${safeUrl}"><blockquote class="twitter-tweet" data-dnt="true"><a href="${safeUrl}" target="_blank" rel="noopener noreferrer">View the original post on X</a></blockquote></div>`;
+  };
+
+  const serializeEditorHtml = () => {
+    if (!editor.current) return editorHtml || "";
+    const clone = editor.current.cloneNode(true) as HTMLDivElement;
+    clone.querySelectorAll<HTMLElement>(".x-editor-tweet-preview").forEach((preview) => {
+      const paragraph = document.createElement("p");
+      paragraph.textContent =
+        preview.dataset.xUrl || preview.querySelector("a")?.getAttribute("href") || "";
+      preview.replaceWith(paragraph);
+    });
+    return clone.innerHTML;
+  };
+
+  const loadEditorXPreviews = () => {
+    editorXTimers.current.forEach(window.clearTimeout);
+    editorXTimers.current = [0, 250, 750, 1500, 3000, 6000].map((delay) =>
+      window.setTimeout(() => {
+        if (editor.current && window.twttr?.widgets) {
+          void window.twttr.widgets.load(editor.current).catch(() => undefined);
+        }
+      }, delay)
+    );
+  };
+
+  const handleEditorPaste = (event: React.ClipboardEvent<HTMLDivElement>) => {
+    const pastedText = event.clipboardData.getData("text/plain").trim();
+    if (!isXStatusUrl(pastedText)) {
+      if (/^https?:\/\/\S+$/i.test(pastedText)) {
+        event.preventDefault();
+        const safeUrl = escapeAttribute(pastedText);
+        insertHtmlAtCursor(`<a href="${safeUrl}" target="_blank" rel="noopener noreferrer">${safeUrl}</a>`);
+      }
+      return;
+    }
+
+    event.preventDefault();
+    insertHtmlAtCursor(`${createEditorXPreview(pastedText)}<p><br></p>`);
+    requestAnimationFrame(loadEditorXPreviews);
+    setMessage("X post preview added. The original URL will be saved with the article.");
   };
 
   const insertMedia = async (file?: File) => {
@@ -217,7 +274,7 @@ export function ArticleEditor() {
   const command = (cmd: string, value?: string) => {
     restoreSelection();
     document.execCommand(cmd, false, value);
-    setEditorHtml(editor.current?.innerHTML || "");
+    setEditorHtml(serializeEditorHtml());
   };
 
   const addLink = () => {
@@ -230,7 +287,7 @@ export function ArticleEditor() {
     if (selection && !selection.isCollapsed) {
       document.execCommand("createLink", false, url);
       document.execCommand("styleWithCSS", false, "false");
-      setEditorHtml(editor.current?.innerHTML || "");
+      setEditorHtml(serializeEditorHtml());
       return;
     }
 
@@ -300,7 +357,7 @@ const deleteArticle = async () => {
       status,
       author_id: user.id,
       body: {
-        html: (editor.current?.innerHTML || editorHtml || "")
+        html: serializeEditorHtml()
           .replace(/<h1\b[^>]*>/gi, "")
           .replace(/<\/h1>/gi, ""),
         author_name: authorName.trim(),
@@ -330,7 +387,7 @@ const deleteArticle = async () => {
   };
 
   const onEditorInput = () => {
-    setEditorHtml(editor.current?.innerHTML || "");
+    setEditorHtml(serializeEditorHtml());
   };
 
   const coverStyle = {
@@ -499,6 +556,7 @@ const deleteArticle = async () => {
           suppressContentEditableWarning
           data-placeholder="Write your story here…"
           onInput={onEditorInput}
+          onPaste={handleEditorPaste}
         />
 
         {uploading && <p className="editor-uploading">{uploading}</p>}

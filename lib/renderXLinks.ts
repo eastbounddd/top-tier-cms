@@ -1,6 +1,8 @@
 const xStatusUrlSource = String.raw`https?:\/\/(?:(?:www|mobile)\.)?(?:x\.com|twitter\.com)\/[A-Za-z0-9_]+\/status\/\d+\/?(?:\?[^\s<"']*)?`;
 const exactXStatusUrl = new RegExp(`^${xStatusUrlSource}$`, "i");
 
+export const isXStatusUrl = (value: string) => exactXStatusUrl.test(value.trim());
+
 const escapeAttribute = (value: string) =>
   value.replace(/&/g, "&amp;").replace(/"/g, "&quot;");
 
@@ -11,7 +13,7 @@ const createEmbed = (url: string) => {
 
 export function renderStandaloneXLinks(html: string) {
   const trimmed = html.trim();
-  if (exactXStatusUrl.test(trimmed)) return createEmbed(trimmed);
+  if (isXStatusUrl(trimmed)) return createEmbed(trimmed);
 
   const rootLinkedPost = trimmed.match(
     new RegExp(`^<a[^>]+href=["'](${xStatusUrlSource})["'][^>]*>[\\s\\S]*?<\\/a>$`, "i")
