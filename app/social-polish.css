@@ -430,6 +430,31 @@
   margin:32px auto!important;
 }
 
+.x-embed{
+  width:100%;
+  max-width:580px;
+  margin:32px auto;
+  overflow:hidden;
+}
+
+.x-embed .twitter-tweet,
+.x-embed twitter-widget,
+.x-embed iframe{
+  width:100%!important;
+  max-width:550px!important;
+  margin-left:auto!important;
+  margin-right:auto!important;
+}
+
+.x-embed .twitter-tweet{
+  box-sizing:border-box;
+  padding:14px;
+  border:1px solid #d7dce3;
+  border-radius:10px;
+  background:#f7f9fb;
+  text-align:center;
+}
+
 @media(max-width:900px){
   .preview{
     display:block;

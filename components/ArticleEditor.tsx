@@ -10,6 +10,8 @@ import {
 import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { schools } from "@/lib/schools";
+import { createXEmbedHtml, normalizeXEmbeds, xPostUrlPattern } from "@/lib/xEmbeds";
+import { XEmbedContent } from "@/components/XEmbedContent";
 
 const slugify = (s: string) =>
   s
@@ -239,25 +241,13 @@ export function ArticleEditor() {
     );
   };
 
-  const addXPost = () => {
-    const url = window.prompt("Paste the X/Twitter post URL:");
-    if (!url) return;
+  const handleEditorPaste = (event: React.ClipboardEvent<HTMLDivElement>) => {
+    const pastedText = event.clipboardData.getData("text/plain").trim();
+    if (!xPostUrlPattern.test(pastedText)) return;
 
-    const valid =
-      /^https?:\/\/(www\.)?(x\.com|twitter\.com)\/[^/]+\/status\/\d+/i.test(url);
-
-    if (!valid) {
-      setMessage("That does not look like a valid X post URL.");
-      return;
-    }
-
-    insertHtmlAtCursor(
-      `<blockquote class="twitter-tweet"><a href="${url.replace(
-        /"/g,
-        "&quot;"
-      )}">View this post on X</a></blockquote><p><br></p>`
-    );
-    setMessage("X post embedded. The full X card appears on the published article.");
+    event.preventDefault();
+    insertHtmlAtCursor(`${createXEmbedHtml(pastedText)}<p><br></p>`);
+    setMessage("X post embedded at the current position.");
   };
 const deleteArticle = async () => {
   if (!id) return;
@@ -319,9 +309,11 @@ const deleteArticle = async () => {
       status,
       author_id: user.id,
       body: {
-        html: (editor.current?.innerHTML || editorHtml || "")
-          .replace(/<h1\b[^>]*>/gi, "")
-          .replace(/<\/h1>/gi, ""),
+        html: normalizeXEmbeds(
+          (editor.current?.innerHTML || editorHtml || "")
+            .replace(/<h1\b[^>]*>/gi, "")
+            .replace(/<\/h1>/gi, "")
+        ),
         author_name: authorName.trim(),
       },
     };
@@ -497,9 +489,6 @@ const deleteArticle = async () => {
           <button type="button" onClick={addLink}>
             🔗 Link
           </button>
-          <button type="button" onClick={addXPost}>
-            𝕏 Embed Post
-          </button>
           <label className="upload-button">
             + Photo / MP4
             <input
@@ -521,6 +510,7 @@ const deleteArticle = async () => {
           suppressContentEditableWarning
           data-placeholder="Write your story here…"
           onInput={onEditorInput}
+          onPaste={handleEditorPaste}
         />
 
         {uploading && <p className="editor-uploading">{uploading}</p>}
@@ -578,10 +568,7 @@ const deleteArticle = async () => {
         <div className="preview-body">
           <div className="preview-body-label">BODY PREVIEW</div>
           {editorHtml ? (
-            <div
-              className="preview-prose"
-              dangerouslySetInnerHTML={{ __html: editorHtml }}
-            />
+            <XEmbedContent html={editorHtml} className="preview-prose" />
           ) : (
             <div className="preview-empty">
               Start writing and your article body will appear here.
