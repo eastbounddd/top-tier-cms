@@ -25,6 +25,7 @@ type ShareOption = {
   label: string;
   icon: React.ComponentType<{ size?: number; "aria-hidden"?: boolean }>;
   href: string;
+  direct?: boolean;
 };
 
 export function ArticleShare({ title, url, description, image }: ArticleShareProps) {
@@ -36,7 +37,7 @@ export function ArticleShare({ title, url, description, image }: ArticleSharePro
 
   const text = `${title}\n${url}`;
   const options: ShareOption[] = [
-    { label: "Facebook", icon: Facebook, href: `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}` },
+    { label: "Facebook", icon: Facebook, href: `https://www.facebook.com/sharer/sharer.php?display=popup&u=${encodeURIComponent(url)}`, direct: true },
     { label: "X / Twitter", icon: XIcon, href: `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}` },
     { label: "LinkedIn", icon: Linkedin, href: `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(url)}` },
     { label: "Bluesky", icon: Cloud, href: `https://bsky.app/intent/compose?text=${encodeURIComponent(text)}` },
@@ -117,12 +118,19 @@ export function ArticleShare({ title, url, description, image }: ArticleSharePro
             </div>
 
             <div className="share-options">
-              {options.map(({ label, icon: Icon, href }) => (
-                <button key={label} type="button" onClick={() => openShareWindow(href)} aria-label={`Share on ${label}`}>
-                  <Icon size={19} aria-hidden />
-                  <span>{label}</span>
-                </button>
-              ))}
+              {options.map(({ label, icon: Icon, href, direct }) =>
+                direct ? (
+                  <a key={label} href={href} target="_blank" rel="noopener noreferrer" aria-label={`Share on ${label}`}>
+                    <Icon size={19} aria-hidden />
+                    <span>{label}</span>
+                  </a>
+                ) : (
+                  <button key={label} type="button" onClick={() => openShareWindow(href)} aria-label={`Share on ${label}`}>
+                    <Icon size={19} aria-hidden />
+                    <span>{label}</span>
+                  </button>
+                )
+              )}
               <a href={`mailto:?subject=${encodeURIComponent(title)}&body=${encodeURIComponent(text)}`}>
                 <Mail size={19} aria-hidden />
                 <span>Email</span>
