@@ -4,9 +4,10 @@ import { createClient } from "@/lib/supabase/server";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { RenderedArticleContent } from "@/components/RenderedArticleContent";
+import { ArticleShare } from "@/components/ArticleShare";
 
 const siteUrl =
-  process.env.NEXT_PUBLIC_SITE_URL || "https://www.toptierstate.net";
+  (process.env.NEXT_PUBLIC_SITE_URL || "https://www.toptierstate.net").replace(/\/$/, "");
 
 async function getArticle(slug: string) {
   const supabase = await createClient();
@@ -36,7 +37,7 @@ export async function generateMetadata({
   }
 
   const canonical = `${siteUrl}/articles/${data.slug}`;
-  const image = data.cover_image_url || `${siteUrl}/top-tier-logo.png`;
+  const image = new URL(data.cover_image_url || "/top-tier-logo.png", siteUrl).toString();
   const description =
     data.excerpt?.trim() ||
     "Read the latest college football news, analysis and original reporting from Top Tier.";
@@ -104,7 +105,7 @@ export default async function ArticlePage({
     : "";
 
   const canonical = `${siteUrl}/articles/${data.slug}`;
-  const image = data.cover_image_url || `${siteUrl}/top-tier-logo.png`;
+  const image = new URL(data.cover_image_url || "/top-tier-logo.png", siteUrl).toString();
 
   const jsonLd = {
     "@context": "https://schema.org",
@@ -141,7 +142,12 @@ export default async function ArticlePage({
             By <strong>{author}</strong>
           </div>
           {published && <div className="article-date">{published}</div>}
-          <div className="article-share-label">TOPTIERSTATE.NET</div>
+          <ArticleShare
+            title={data.title}
+            url={canonical}
+            description={data.excerpt || "Read the latest from Top Tier."}
+            image={image}
+          />
         </div>
 
         {data.cover_image_url && (
