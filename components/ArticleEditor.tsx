@@ -10,8 +10,6 @@ import {
 import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { schools } from "@/lib/schools";
-import { createXEditorBlockHtml, prepareXEmbedsForEditor, xPostUrlPattern } from "@/lib/xEmbeds";
-import { XEmbedContent } from "@/components/XEmbedContent";
 
 const slugify = (s: string) =>
   s
@@ -81,11 +79,10 @@ export function ArticleEditor() {
           status: data.status || "draft",
         });
 
-        const storedHtml =
+        const html =
           typeof data.body === "object" && data.body?.html
             ? data.body.html
             : String(data.body || "");
-        const html = prepareXEmbedsForEditor(storedHtml);
 
         setAuthorName(
           typeof data.body === "object" ? data.body?.author_name || "" : ""
@@ -242,14 +239,6 @@ export function ArticleEditor() {
     );
   };
 
-  const handleEditorPaste = (event: React.ClipboardEvent<HTMLDivElement>) => {
-    const pastedText = event.clipboardData.getData("text/plain").trim();
-    if (!xPostUrlPattern.test(pastedText)) return;
-
-    event.preventDefault();
-    insertHtmlAtCursor(`${createXEditorBlockHtml(pastedText)}<p><br></p>`);
-    setMessage("X post embedded at the current position.");
-  };
 const deleteArticle = async () => {
   if (!id) return;
 
@@ -310,11 +299,9 @@ const deleteArticle = async () => {
       status,
       author_id: user.id,
       body: {
-        html: prepareXEmbedsForEditor(
-          (editor.current?.innerHTML || editorHtml || "")
-            .replace(/<h1\b[^>]*>/gi, "")
-            .replace(/<\/h1>/gi, "")
-        ),
+        html: (editor.current?.innerHTML || editorHtml || "")
+          .replace(/<h1\b[^>]*>/gi, "")
+          .replace(/<\/h1>/gi, ""),
         author_name: authorName.trim(),
       },
     };
@@ -511,7 +498,6 @@ const deleteArticle = async () => {
           suppressContentEditableWarning
           data-placeholder="Write your story here…"
           onInput={onEditorInput}
-          onPaste={handleEditorPaste}
         />
 
         {uploading && <p className="editor-uploading">{uploading}</p>}
@@ -569,7 +555,10 @@ const deleteArticle = async () => {
         <div className="preview-body">
           <div className="preview-body-label">BODY PREVIEW</div>
           {editorHtml ? (
-            <XEmbedContent html={editorHtml} className="preview-prose" />
+            <div
+              className="preview-prose"
+              dangerouslySetInnerHTML={{ __html: editorHtml }}
+            />
           ) : (
             <div className="preview-empty">
               Start writing and your article body will appear here.
