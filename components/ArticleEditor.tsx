@@ -10,6 +10,7 @@ import {
 import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { schools } from "@/lib/schools";
+import { RenderedArticleContent } from "@/components/RenderedArticleContent";
 
 const slugify = (s: string) =>
   s
@@ -555,10 +556,7 @@ const deleteArticle = async () => {
         <div className="preview-body">
           <div className="preview-body-label">BODY PREVIEW</div>
           {editorHtml ? (
-            <div
-              className="preview-prose"
-              dangerouslySetInnerHTML={{ __html: editorHtml }}
-            />
+            <RenderedArticleContent html={editorHtml} className="preview-prose" />
           ) : (
             <div className="preview-empty">
               Start writing and your article body will appear here.

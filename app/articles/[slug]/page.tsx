@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import Script from "next/script";
 import { createClient } from "@/lib/supabase/server";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
+import { RenderedArticleContent } from "@/components/RenderedArticleContent";
 
 const siteUrl =
   process.env.NEXT_PUBLIC_SITE_URL || "https://www.toptierstate.net";
@@ -159,19 +159,10 @@ export default async function ArticlePage({
           </div>
         )}
 
-        <article
-          className="prose"
-          dangerouslySetInnerHTML={{ __html: body }}
-        />
+        <RenderedArticleContent html={body} className="prose" />
       </main>
 
       <Footer />
-
-      <Script
-        src="https://platform.twitter.com/widgets.js"
-        strategy="lazyOnload"
-        charSet="utf-8"
-      />
 
       <script
         type="application/ld+json"
