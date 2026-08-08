@@ -36,8 +36,9 @@ export function ArticleShare({ title, url, description, image }: ArticleSharePro
   const dialog = useRef<HTMLElement>(null);
 
   const text = `${title}\n${url}`;
+  const facebookShareUrl = `https://www.facebook.com/sharer.php?u=${encodeURIComponent(url)}`;
   const options: ShareOption[] = [
-    { label: "Facebook", icon: Facebook, href: `https://www.facebook.com/sharer/sharer.php?display=popup&u=${encodeURIComponent(url)}`, direct: true },
+    { label: "Facebook", icon: Facebook, href: facebookShareUrl, direct: true },
     { label: "X / Twitter", icon: XIcon, href: `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}` },
     { label: "LinkedIn", icon: Linkedin, href: `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(url)}` },
     { label: "Bluesky", icon: Cloud, href: `https://bsky.app/intent/compose?text=${encodeURIComponent(text)}` },
@@ -76,6 +77,15 @@ export function ArticleShare({ title, url, description, image }: ArticleSharePro
   const openShareWindow = (href: string) => {
     setOpen(false);
     window.open(href, "article-share", "popup,noopener,noreferrer,width=720,height=640");
+  };
+
+  const shareOnFacebook = (event: React.MouseEvent<HTMLAnchorElement>) => {
+    setOpen(false);
+
+    if (window.matchMedia("(max-width: 700px), (pointer: coarse)").matches) {
+      event.preventDefault();
+      window.location.assign(facebookShareUrl);
+    }
   };
 
   const copyLink = async () => {
@@ -120,7 +130,7 @@ export function ArticleShare({ title, url, description, image }: ArticleSharePro
             <div className="share-options">
               {options.map(({ label, icon: Icon, href, direct }) =>
                 direct ? (
-                  <a key={label} href={href} target="_blank" rel="noopener noreferrer" aria-label={`Share on ${label}`}>
+                  <a key={label} href={href} target="_blank" rel="noopener noreferrer" onClick={shareOnFacebook} aria-label={`Share on ${label}`}>
                     <Icon size={19} aria-hidden />
                     <span>{label}</span>
                   </a>
