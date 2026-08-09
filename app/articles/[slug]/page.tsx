@@ -7,7 +7,22 @@ import { RenderedArticleContent } from "@/components/RenderedArticleContent";
 import { ArticleShare } from "@/components/ArticleShare";
 
 const siteUrl =
-  (process.env.NEXT_PUBLIC_SITE_URL || "https://www.toptierstate.net").replace(/\/$/, "");
+  (process.env.NEXT_PUBLIC_SITE_URL || "https://toptierstate.net").replace(/\/$/, "");
+
+function getPublicImageUrl(value: string | null | undefined) {
+  const source = value?.trim() || "/top-tier-logo.png";
+
+  if (source.startsWith("//")) return `https:${source}`;
+  return new URL(source, `${siteUrl}/`).toString();
+}
+
+function getImageContentType(value: string) {
+  const extension = new URL(value).pathname.split(".").pop()?.toLowerCase();
+  if (extension === "jpg" || extension === "jpeg") return "image/jpeg";
+  if (extension === "png") return "image/png";
+  if (extension === "webp") return "image/webp";
+  return undefined;
+}
 
 async function getArticle(slug: string) {
   const supabase = await createClient();
@@ -37,7 +52,8 @@ export async function generateMetadata({
   }
 
   const canonical = `${siteUrl}/articles/${data.slug}`;
-  const image = new URL(data.cover_image_url || "/top-tier-logo.png", siteUrl).toString();
+  const image = getPublicImageUrl(data.cover_image_url);
+  const imageType = getImageContentType(image);
   const description =
     data.excerpt?.trim() ||
     "Read the latest college football news, analysis and original reporting from Top Tier.";
@@ -62,9 +78,8 @@ export async function generateMetadata({
       images: [
         {
           url: image,
-          width: 1600,
-          height: 900,
           alt: data.title,
+          type: imageType,
         },
       ],
     },
@@ -72,7 +87,7 @@ export async function generateMetadata({
       card: "summary_large_image",
       title: data.title,
       description,
-      images: [image],
+      images: [{ url: image, alt: data.title }],
     },
   };
 }
@@ -105,7 +120,7 @@ export default async function ArticlePage({
     : "";
 
   const canonical = `${siteUrl}/articles/${data.slug}`;
-  const image = new URL(data.cover_image_url || "/top-tier-logo.png", siteUrl).toString();
+  const image = getPublicImageUrl(data.cover_image_url);
 
   const jsonLd = {
     "@context": "https://schema.org",

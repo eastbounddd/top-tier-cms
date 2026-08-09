@@ -4,6 +4,9 @@ import "./globals.css";
 import "./social-polish.css";
 
 export const metadata: Metadata = {
+  metadataBase: new URL(
+    process.env.NEXT_PUBLIC_SITE_URL || "https://toptierstate.net"
+  ),
   title: { default: "Top Tier | College Football News", template: "%s | Top Tier" },
   description: "Independent college football news, analysis and original reporting.",
   icons: { icon: "/top-tier-logo.png", apple: "/top-tier-logo.png" }
