@@ -1,6 +1,6 @@
 "use client";
 
-import { Facebook, Link as LinkIcon, X } from "lucide-react";
+import { Facebook, Link as LinkIcon } from "lucide-react";
 import { useState } from "react";
 
 type ArticleShareProps = {
@@ -12,13 +12,7 @@ export function ArticleShare({ title, url }: ArticleShareProps) {
   const [copied, setCopied] = useState(false);
   const xShareUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(title)}&url=${encodeURIComponent(url)}`;
   const facebookShareUrl = `https://www.facebook.com/sharer.php?u=${encodeURIComponent(url)}`;
-
-  const shareOnFacebook = (event: React.MouseEvent<HTMLAnchorElement>) => {
-    if (window.matchMedia("(max-width: 700px), (pointer: coarse)").matches) {
-      event.preventDefault();
-      window.location.assign(facebookShareUrl);
-    }
-  };
+  const facebookMobileShareUrl = `https://m.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`;
 
   const copyLink = async () => {
     try {
@@ -48,14 +42,23 @@ export function ArticleShare({ title, url }: ArticleShareProps) {
         aria-label="Share on X"
         data-tooltip="Share on X"
       >
-        <X size={17} aria-hidden />
+        <img className="article-share-x-logo" src="/x-share-logo.png" alt="" aria-hidden />
       </a>
       <a
-        className="article-share-icon"
+        className="article-share-icon article-share-facebook-desktop"
         href={facebookShareUrl}
         target="_blank"
         rel="noopener noreferrer"
-        onClick={shareOnFacebook}
+        aria-label="Share on Facebook"
+        data-tooltip="Share on Facebook"
+      >
+        <Facebook size={17} aria-hidden />
+      </a>
+      <a
+        className="article-share-icon article-share-facebook-mobile"
+        href={facebookMobileShareUrl}
+        target="_blank"
+        rel="noopener noreferrer"
         aria-label="Share on Facebook"
         data-tooltip="Share on Facebook"
       >
