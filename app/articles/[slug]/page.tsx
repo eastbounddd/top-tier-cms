@@ -160,8 +160,6 @@ export default async function ArticlePage({
           <ArticleShare
             title={data.title}
             url={canonical}
-            description={data.excerpt || "Read the latest from Top Tier."}
-            image={image}
           />
         </div>
 
