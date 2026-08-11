@@ -7,7 +7,7 @@ import { RenderedArticleContent } from "@/components/RenderedArticleContent";
 import { ArticleShare } from "@/components/ArticleShare";
 
 const siteUrl =
-  (process.env.NEXT_PUBLIC_SITE_URL || "https://toptierstate.net").replace(/\/$/, "");
+  (process.env.NEXT_PUBLIC_SITE_URL || "https://www.toptierstate.net").replace(/\/$/, "");
 
 function getPublicImageUrl(value: string | null | undefined) {
   const source = value?.trim() || "/top-tier-logo.png";
