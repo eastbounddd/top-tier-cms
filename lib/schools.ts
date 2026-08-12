@@ -13,7 +13,13 @@ export const schools = [
   { name: "BYU", slug: "byu", xHandle: "toptiercougs" },
   { name: "Clemson", slug: "clemson", xHandle: "TopTierCU" },
   { name: "Nebraska", slug: "nebraska", xHandle: "TopTierHuskers" },
+  { name: "Tennessee", slug: "tennessee", xHandle: "TopTierVols" },
   { name: "Mississippi State", slug: "mississippi-state", xHandle: "toptiermissst" },
+] as const;
+
+export const articleSchoolOptions = [
+  ...schools.map(({ name, slug }) => ({ name, slug })),
+  { name: "Recruiting", slug: "recruiting" },
 ] as const;
 
 export const getSchoolBySlug = (slug: string) =>

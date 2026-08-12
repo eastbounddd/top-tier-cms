@@ -16,7 +16,7 @@ const accounts = [
   ["Top Tier Oklahoma","toptieroklahoma"],
   ["Top Tier Notre Dame","toptiernd"],
   ["Top Tier SMU","toptiersmu"],
-  ["Top Tier Tennessee","toptiervols"],
+  ["Top Tier Vols","TopTierVols"],
   ["Top Tier LSU","toptierlsu"],
   ["Top Tier Florida State","toptiernoles"],
   ["Top Tier South Carolina","toptierusc"],

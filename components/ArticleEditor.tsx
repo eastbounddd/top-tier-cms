@@ -9,7 +9,7 @@ import {
 } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
-import { schools } from "@/lib/schools";
+import { articleSchoolOptions } from "@/lib/schools";
 import { RenderedArticleContent } from "@/components/RenderedArticleContent";
 import { isXStatusUrl, renderStandaloneXLinks } from "@/lib/renderXLinks";
 
@@ -447,7 +447,7 @@ const deleteArticle = async () => {
               }
             >
               <option value="">No school</option>
-              {schools.map((school) => (
+              {articleSchoolOptions.map((school) => (
                 <option key={school.slug} value={school.name}>{school.name}</option>
               ))}
             </select>

@@ -8,6 +8,7 @@ import Link from "next/link";
 
 export default async function Home() {
   let articles: any[] = [];
+  let recruitingArticles: any[] = [];
   try {
     const supabase = await createClient();
     const currentFields = "id,title,slug,excerpt,cover_image_url,category,published_at,is_top_story,school";
@@ -21,6 +22,15 @@ export default async function Home() {
       articles = (legacyResult.data ?? []).map((article) => ({ ...article, school: null }));
     } else {
       articles = result.data ?? [];
+
+      const recruitingResult = await supabase
+        .from("articles")
+        .select(currentFields)
+        .eq("status", "published")
+        .eq("school", "Recruiting")
+        .order("published_at", { ascending: false })
+        .limit(8);
+      recruitingArticles = recruitingResult.data ?? [];
     }
   } catch {}
   const top = articles.filter(a => a.is_top_story).concat(articles.filter(a => !a.is_top_story)).slice(0,5);
@@ -34,5 +44,6 @@ export default async function Home() {
     <section id="college-football" className="dark-band"><div className="shell content-section"><div className="section-row"><div><small>THE DAILY HUDDLE</small><h2>College Football News</h2></div></div>{college.length?<div className="news-grid">{college.map(a => <ArticleCard key={a.id} article={a}/>)}</div>:<p className="muted">No college football stories have been published yet.</p>}</div></section>
     <section id="other-news" className="shell content-section"><div className="section-row"><div><small>AROUND THE SPORTS WORLD</small><h2>Other News</h2></div></div>{other.length?<div className="news-grid">{other.map(a => <ArticleCard key={a.id} article={a}/>)}</div>:<p className="muted">No other news stories have been published yet.</p>}</section>
     <section className="dark-band"><div className="shell content-section"><div className="section-row"><div><small>FROM OUR SCHOOL WRITERS</small><h2>School Coverage</h2></div><Link href="/schools" className="red-button">View All Schools →</Link></div>{schoolArticles.length?<div className="news-grid">{schoolArticles.map(a => <ArticleCard key={a.id} article={a}/>)}</div>:<p className="muted">School articles will appear here as they are published.</p>}</div></section>
+    <section className="shell content-section"><div className="section-row"><div><small>THE LATEST PROSPECT NEWS</small><h2>Recruiting News</h2></div><Link href="/recruiting" className="red-button">View More Recruiting →</Link></div>{recruitingArticles.length?<div className="news-grid">{recruitingArticles.map(a => <ArticleCard key={a.id} article={a}/>)}</div>:<p className="muted">Recruiting stories will appear here as they are published.</p>}</section>
   </main><Footer/></>;
 }
