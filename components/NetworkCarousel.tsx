@@ -24,6 +24,7 @@ const accounts = [
   ["Top Tier Texas A&M","toptiertexasam"],
   ["Top Tier Jacksonville St","toptiercocks"],
   ["Top Tier BYU","toptiercougs"],
+  ["Top Tier Clemson","TopTierCU"],
   ["Top Tier Baylor","toptierbaylor"],
   ["Top Tier Penn State","toptierpennst"],
   ["Top Tier Mississippi State","toptiermissst"],
