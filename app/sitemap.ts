@@ -6,7 +6,10 @@ const siteUrl = (
   process.env.NEXT_PUBLIC_SITE_URL || "https://www.toptierstate.net"
 ).replace(/\/$/, "");
 
-export const revalidate = 300;
+// Article slugs can be edited after publishing. Always read the current rows
+// from Supabase so the sitemap never retains a previous slug in an ISR cache.
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
 
 type SitemapArticle = {
   slug: string;
