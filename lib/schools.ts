@@ -6,6 +6,7 @@ export const schools = [
   { name: "Michigan", slug: "michigan", xHandle: "toptieruofm" },
   { name: "Tulane", slug: "tulane", xHandle: "toptiertulane" },
   { name: "Georgia", slug: "georgia", xHandle: "toptieruga" },
+  { name: "Iowa State", slug: "iowa-state", xHandle: "toptiercyclones" },
   { name: "Baylor", slug: "baylor", xHandle: "toptierbaylor" },
   { name: "Vanderbilt", slug: "vanderbilt", xHandle: "toptiervandy" },
   { name: "Oklahoma", slug: "oklahoma", xHandle: "toptieroklahoma" },
@@ -14,6 +15,7 @@ export const schools = [
   { name: "Clemson", slug: "clemson", xHandle: "TopTierCU" },
   { name: "Nebraska", slug: "nebraska", xHandle: "TopTierHuskers" },
   { name: "Tennessee", slug: "tennessee", xHandle: "TopTierVols" },
+  { name: "Kentucky", slug: "kentucky", xHandle: "toptierbbn" },
   { name: "Mississippi State", slug: "mississippi-state", xHandle: "toptiermissst" },
 ] as const;
 
