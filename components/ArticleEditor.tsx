@@ -54,7 +54,6 @@ export function ArticleEditor() {
   const [busy, setBusy] = useState(false);
   const [uploading, setUploading] = useState("");
   const [message, setMessage] = useState("");
-  const [photoCredit, setPhotoCredit] = useState("");
 
   useEffect(() => {
     if (!id) return;
@@ -183,9 +182,6 @@ export function ArticleEditor() {
   const escapeAttribute = (value: string) =>
     value.replace(/&/g, "&amp;").replace(/"/g, "&quot;");
 
-  const escapeHtml = (value: string) =>
-    escapeAttribute(value).replace(/</g, "&lt;").replace(/>/g, "&gt;");
-
   const createEditorXPreview = (url: string) => {
     const safeUrl = escapeAttribute(url);
     return `<div class="x-editor-tweet-preview" contenteditable="false" data-x-url="${safeUrl}"><blockquote class="twitter-tweet" data-dnt="true"><a href="${safeUrl}" target="_blank" rel="noopener noreferrer">View the original post on X</a></blockquote></div>`;
@@ -199,6 +195,18 @@ export function ArticleEditor() {
       paragraph.textContent =
         preview.dataset.xUrl || preview.querySelector("a")?.getAttribute("href") || "";
       preview.replaceWith(paragraph);
+    });
+    clone.querySelectorAll<HTMLElement>("figcaption.photo-credit").forEach((caption) => {
+      const text = caption.textContent?.trim() || "";
+      if (!text) {
+        caption.remove();
+        return;
+      }
+
+      // Store captions as plain text within their own image figure. Assigning
+      // textContent strips pasted markup while preserving punctuation safely.
+      caption.textContent = text;
+      caption.removeAttribute("data-editor-caption-id");
     });
     return clone.innerHTML;
   };
@@ -215,6 +223,17 @@ export function ArticleEditor() {
   };
 
   const handleEditorPaste = (event: React.ClipboardEvent<HTMLDivElement>) => {
+    const target = event.target as HTMLElement;
+    if (target.closest("figcaption.photo-credit")) {
+      event.preventDefault();
+      document.execCommand(
+        "insertText",
+        false,
+        event.clipboardData.getData("text/plain")
+      );
+      return;
+    }
+
     const pastedText = event.clipboardData.getData("text/plain").trim();
     if (!isXStatusUrl(pastedText)) {
       if (/^https?:\/\/\S+$/i.test(pastedText)) {
@@ -257,20 +276,34 @@ export function ArticleEditor() {
           `<figure class="article-media-block"><video controls playsinline preload="metadata" src="${url}"></video></figure><p><br></p>`
         );
       } else {
-        const credit = photoCredit.trim();
-        const caption = credit
-          ? `<figcaption class="photo-credit">${escapeHtml(credit)}</figcaption>`
-          : "";
+        const captionId = `caption-${Date.now()}-${Math.random()
+          .toString(36)
+          .slice(2)}`;
         insertHtmlAtCursor(
-          `<figure class="article-media-block"><img src="${url}" alt="" />${caption}</figure><p><br></p>`
+          `<figure class="article-media-block"><img src="${url}" alt="" /><figcaption class="photo-credit" data-editor-caption-id="${captionId}" data-placeholder="Photo credit / caption (optional)"></figcaption></figure><p><br></p>`
         );
-        setPhotoCredit("");
+
+        requestAnimationFrame(() => {
+          const caption = editor.current?.querySelector<HTMLElement>(
+            `[data-editor-caption-id="${captionId}"]`
+          );
+          if (!caption) return;
+
+          const range = document.createRange();
+          range.selectNodeContents(caption);
+          range.collapse(false);
+          editor.current?.focus();
+          const selection = window.getSelection();
+          selection?.removeAllRanges();
+          selection?.addRange(range);
+          savedRange.current = range.cloneRange();
+        });
       }
 
       setMessage(
         isMp4
           ? "Video uploaded and inserted into the article."
-          : "Photo uploaded and inserted into the article."
+          : "Photo inserted. Add its optional credit or caption directly below it."
       );
     } catch (e: any) {
       setMessage(`Media upload failed: ${e.message}`);
@@ -554,16 +587,6 @@ const deleteArticle = async () => {
               onChange={(e: ChangeEvent<HTMLInputElement>) =>
                 insertMedia(e.target.files?.[0])
               }
-            />
-          </label>
-          <label className="photo-credit-field">
-            <span>Photo credit (optional)</span>
-            <input
-              type="text"
-              value={photoCredit}
-              disabled={busy}
-              placeholder="e.g. Photo by Jane Smith"
-              onChange={(e) => setPhotoCredit(e.target.value)}
             />
           </label>
         </div>
