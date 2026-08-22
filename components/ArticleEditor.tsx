@@ -271,39 +271,38 @@ export function ArticleEditor() {
         isMp4 ? "article-videos" : "article-images"
       );
 
-      if (isMp4) {
-        insertHtmlAtCursor(
-          `<figure class="article-media-block"><video controls playsinline preload="metadata" src="${url}"></video></figure><p><br></p>`
-        );
-      } else {
-        const captionId = `caption-${Date.now()}-${Math.random()
-          .toString(36)
-          .slice(2)}`;
-        insertHtmlAtCursor(
-          `<figure class="article-media-block"><img src="${url}" alt="" /><figcaption class="photo-credit" data-editor-caption-id="${captionId}" data-placeholder="Photo credit / caption (optional)"></figcaption></figure><p><br></p>`
-        );
+      const captionId = `caption-${Date.now()}-${Math.random()
+        .toString(36)
+        .slice(2)}`;
+      const mediaMarkup = isMp4
+        ? `<video controls playsinline preload="metadata" src="${url}"></video>`
+        : `<img src="${url}" alt="" />`;
+      const captionLabel = isMp4
+        ? "Video credit / caption (optional)"
+        : "Photo credit / caption (optional)";
 
-        requestAnimationFrame(() => {
-          const caption = editor.current?.querySelector<HTMLElement>(
-            `[data-editor-caption-id="${captionId}"]`
-          );
-          if (!caption) return;
+      insertHtmlAtCursor(
+        `<figure class="article-media-block">${mediaMarkup}<figcaption class="photo-credit" data-editor-caption-id="${captionId}" data-placeholder="${captionLabel}"></figcaption></figure><p><br></p>`
+      );
 
-          const range = document.createRange();
-          range.selectNodeContents(caption);
-          range.collapse(false);
-          editor.current?.focus();
-          const selection = window.getSelection();
-          selection?.removeAllRanges();
-          selection?.addRange(range);
-          savedRange.current = range.cloneRange();
-        });
-      }
+      requestAnimationFrame(() => {
+        const caption = editor.current?.querySelector<HTMLElement>(
+          `[data-editor-caption-id="${captionId}"]`
+        );
+        if (!caption) return;
+
+        const range = document.createRange();
+        range.selectNodeContents(caption);
+        range.collapse(false);
+        editor.current?.focus();
+        const selection = window.getSelection();
+        selection?.removeAllRanges();
+        selection?.addRange(range);
+        savedRange.current = range.cloneRange();
+      });
 
       setMessage(
-        isMp4
-          ? "Video uploaded and inserted into the article."
-          : "Photo inserted. Add its optional credit or caption directly below it."
+        `${isMp4 ? "Video" : "Photo"} inserted. Add its optional credit or caption directly below it.`
       );
     } catch (e: any) {
       setMessage(`Media upload failed: ${e.message}`);
