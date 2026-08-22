@@ -54,6 +54,7 @@ export function ArticleEditor() {
   const [busy, setBusy] = useState(false);
   const [uploading, setUploading] = useState("");
   const [message, setMessage] = useState("");
+  const [photoCredit, setPhotoCredit] = useState("");
 
   useEffect(() => {
     if (!id) return;
@@ -182,6 +183,9 @@ export function ArticleEditor() {
   const escapeAttribute = (value: string) =>
     value.replace(/&/g, "&amp;").replace(/"/g, "&quot;");
 
+  const escapeHtml = (value: string) =>
+    escapeAttribute(value).replace(/</g, "&lt;").replace(/>/g, "&gt;");
+
   const createEditorXPreview = (url: string) => {
     const safeUrl = escapeAttribute(url);
     return `<div class="x-editor-tweet-preview" contenteditable="false" data-x-url="${safeUrl}"><blockquote class="twitter-tweet" data-dnt="true"><a href="${safeUrl}" target="_blank" rel="noopener noreferrer">View the original post on X</a></blockquote></div>`;
@@ -253,9 +257,14 @@ export function ArticleEditor() {
           `<figure class="article-media-block"><video controls playsinline preload="metadata" src="${url}"></video></figure><p><br></p>`
         );
       } else {
+        const credit = photoCredit.trim();
+        const caption = credit
+          ? `<figcaption class="photo-credit">${escapeHtml(credit)}</figcaption>`
+          : "";
         insertHtmlAtCursor(
-          `<figure class="article-media-block"><img src="${url}" alt="" /></figure><p><br></p>`
+          `<figure class="article-media-block"><img src="${url}" alt="" />${caption}</figure><p><br></p>`
         );
+        setPhotoCredit("");
       }
 
       setMessage(
@@ -545,6 +554,16 @@ const deleteArticle = async () => {
               onChange={(e: ChangeEvent<HTMLInputElement>) =>
                 insertMedia(e.target.files?.[0])
               }
+            />
+          </label>
+          <label className="photo-credit-field">
+            <span>Photo credit (optional)</span>
+            <input
+              type="text"
+              value={photoCredit}
+              disabled={busy}
+              placeholder="e.g. Photo by Jane Smith"
+              onChange={(e) => setPhotoCredit(e.target.value)}
             />
           </label>
         </div>

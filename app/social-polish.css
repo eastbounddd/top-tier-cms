@@ -426,6 +426,41 @@
   margin:0 auto;
 }
 
+.photo-credit{
+  margin:8px 0 0;
+  color:#8b929d;
+  font:italic 12px/1.45 Inter,Arial,sans-serif;
+  text-align:left;
+}
+
+.rich-editor .photo-credit{
+  color:#68707a;
+}
+
+.photo-credit-field{
+  display:flex;
+  min-width:min(280px,100%);
+  flex:1;
+  flex-direction:column;
+  gap:4px;
+}
+
+.photo-credit-field span{
+  color:#aeb4be;
+  font-size:11px;
+}
+
+.photo-credit-field input{
+  width:100%;
+  min-height:34px;
+  padding:7px 10px;
+  border:1px solid #454b56;
+  background:#0d0f12;
+  color:#fff;
+  font-size:12px;
+  font-style:italic;
+}
+
 .prose .twitter-tweet{
   margin:32px auto!important;
 }
