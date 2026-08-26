@@ -37,7 +37,6 @@ export function ArticleEditor() {
   const router = useRouter();
   const editor = useRef<HTMLDivElement>(null);
   const savedRange = useRef<Range | null>(null);
-  const editorXTimers = useRef<number[]>([]);
 
   const [form, setForm] = useState<FormState>({
     title: "",
@@ -93,11 +92,13 @@ export function ArticleEditor() {
         setEditorHtml(html);
         requestAnimationFrame(() => {
           if (editor.current) {
-            editor.current.innerHTML = renderStandaloneXLinks(html).replaceAll(
-              'class="x-post-embed"',
-              'class="x-editor-tweet-preview" contenteditable="false"'
-            );
-            loadEditorXPreviews();
+            const rendered = document.createElement("div");
+            rendered.innerHTML = renderStandaloneXLinks(html);
+            rendered.querySelectorAll<HTMLElement>(".x-post-embed").forEach((post) => {
+              const url = post.dataset.xUrl || post.querySelector("a")?.href || "";
+              if (url) post.outerHTML = createEditorXPreview(url);
+            });
+            editor.current.innerHTML = rendered.innerHTML;
           }
         });
       });
@@ -120,8 +121,6 @@ export function ArticleEditor() {
     return () =>
       document.removeEventListener("selectionchange", rememberSelection);
   }, []);
-
-  useEffect(() => () => editorXTimers.current.forEach(window.clearTimeout), []);
 
   const restoreSelection = () => {
     editor.current?.focus();
@@ -184,7 +183,11 @@ export function ArticleEditor() {
 
   const createEditorXPreview = (url: string) => {
     const safeUrl = escapeAttribute(url);
-    return `<div class="x-editor-tweet-preview" contenteditable="false" data-x-url="${safeUrl}"><blockquote class="twitter-tweet" data-dnt="true"><a href="${safeUrl}" target="_blank" rel="noopener noreferrer">View the original post on X</a></blockquote></div>`;
+    const tweetId = url.match(/\/status\/(\d+)/i)?.[1] || "";
+    const embedUrl = escapeAttribute(
+      `https://platform.twitter.com/embed/Tweet.html?id=${tweetId}&dnt=true&lang=en&theme=light&hideCard=false&hideThread=false`
+    );
+    return `<div class="x-editor-tweet-preview" contenteditable="false" data-x-url="${safeUrl}"><iframe class="x-post-frame" src="${embedUrl}" title="Embedded post on X" loading="lazy" scrolling="yes"></iframe><a class="x-post-source-link" href="${safeUrl}" target="_blank" rel="noopener noreferrer">View post on X</a></div>`;
   };
 
   const serializeEditorHtml = () => {
@@ -211,17 +214,6 @@ export function ArticleEditor() {
     return clone.innerHTML;
   };
 
-  const loadEditorXPreviews = () => {
-    editorXTimers.current.forEach(window.clearTimeout);
-    editorXTimers.current = [0, 250, 750, 1500, 3000, 6000].map((delay) =>
-      window.setTimeout(() => {
-        if (editor.current && window.twttr?.widgets) {
-          void window.twttr.widgets.load(editor.current).catch(() => undefined);
-        }
-      }, delay)
-    );
-  };
-
   const handleEditorPaste = (event: React.ClipboardEvent<HTMLDivElement>) => {
     const target = event.target as HTMLElement;
     if (target.closest("figcaption.photo-credit")) {
@@ -246,7 +238,6 @@ export function ArticleEditor() {
 
     event.preventDefault();
     insertHtmlAtCursor(`${createEditorXPreview(pastedText)}<p><br></p>`);
-    requestAnimationFrame(loadEditorXPreviews);
     setMessage("X post preview added. The original URL will be saved with the article.");
   };
 

@@ -1,113 +1,56 @@
 "use client";
 
-import { memo, useEffect, useMemo, useRef } from "react";
+import { memo, useMemo } from "react";
 import { splitRenderedArticle } from "@/lib/renderXLinks";
 
-type XWidgets = {
-  load: (element?: HTMLElement) => Promise<unknown>;
-  createTweet: (
-    tweetId: string,
-    element: HTMLElement,
-    options?: Record<string, string | boolean>
-  ) => Promise<HTMLElement | undefined>;
-};
-
-declare global {
-  interface Window {
-    twttr?: { widgets?: XWidgets };
-  }
-}
-
-let xWidgetsPromise: Promise<XWidgets> | null = null;
-
-function getXWidgets() {
-  if (window.twttr?.widgets) return Promise.resolve(window.twttr.widgets);
-  if (xWidgetsPromise) return xWidgetsPromise;
-
-  xWidgetsPromise = new Promise<XWidgets>((resolve, reject) => {
-    const existing = document.querySelector<HTMLScriptElement>(
-      'script[src="https://platform.twitter.com/widgets.js"]'
-    );
-    const script = existing || document.createElement("script");
-    const timeout = window.setTimeout(
-      () => reject(new Error("X widgets timed out while loading.")),
-      15000
-    );
-
-    const finish = () => {
-      window.clearTimeout(timeout);
-      if (window.twttr?.widgets) resolve(window.twttr.widgets);
-      else reject(new Error("X widgets did not initialize."));
-    };
-    const fail = () => {
-      window.clearTimeout(timeout);
-      reject(new Error("X widgets failed to load."));
-    };
-
-    script.addEventListener("load", finish, { once: true });
-    script.addEventListener("error", fail, { once: true });
-
-    if (!existing) {
-      script.src = "https://platform.twitter.com/widgets.js";
-      script.async = true;
-      script.charset = "utf-8";
-      document.head.appendChild(script);
-    }
-  }).catch((error) => {
-    xWidgetsPromise = null;
-    throw error;
-  });
-
-  return xWidgetsPromise;
-}
-
-const TweetEmbed = memo(function TweetEmbed({ url, tweetId }: { url: string; tweetId: string }) {
-  const wrapper = useRef<HTMLDivElement>(null);
-  const target = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const element = wrapper.current;
-    const mount = target.current;
-    if (!element || !mount) return;
-    let cancelled = false;
-
-    void getXWidgets()
-      .then((widgets) => widgets.createTweet(tweetId, mount, {
-        dnt: true,
-        align: "center",
-        conversation: "none",
-      }))
-      .then((widget) => {
-        if (!cancelled && widget) {
-          element.classList.remove("x-post-embed-failed");
-          element.classList.add("x-post-embed-loaded");
-        }
-      })
-      .catch(() => {
-        if (!cancelled) element.classList.add("x-post-embed-failed");
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [tweetId]);
+const TweetEmbed = memo(function TweetEmbed({
+  url,
+  tweetId,
+}: {
+  url: string;
+  tweetId: string;
+}) {
+  const embedUrl = new URL("https://platform.twitter.com/embed/Tweet.html");
+  embedUrl.searchParams.set("id", tweetId);
+  embedUrl.searchParams.set("dnt", "true");
+  embedUrl.searchParams.set("lang", "en");
+  embedUrl.searchParams.set("theme", "light");
+  embedUrl.searchParams.set("hideCard", "false");
+  embedUrl.searchParams.set("hideThread", "false");
 
   return (
-    <div ref={wrapper} className="x-post-embed">
-      <div ref={target} className="x-post-widget-target" />
-      <a className="x-post-fallback" href={url} target="_blank" rel="noopener noreferrer">
-        View the original post on X
+    <div className="x-post-embed x-post-direct-embed">
+      <iframe
+        className="x-post-frame"
+        src={embedUrl.toString()}
+        title="Embedded post on X"
+        loading="lazy"
+        scrolling="yes"
+        allowFullScreen
+      />
+      <a
+        className="x-post-source-link"
+        href={url}
+        target="_blank"
+        rel="noopener noreferrer"
+      >
+        View post on X
       </a>
     </div>
   );
 });
 
-export function RenderedArticleContent({ html, className }: { html: string; className: string }) {
-  const container = useRef<HTMLElement>(null);
+export function RenderedArticleContent({
+  html,
+  className,
+}: {
+  html: string;
+  className: string;
+}) {
   const segments = useMemo(() => splitRenderedArticle(html), [html]);
 
   return (
-    <article ref={container} className={className}>
+    <article className={className}>
       {segments.map((segment, index) =>
         segment.type === "tweet" ? (
           <TweetEmbed
