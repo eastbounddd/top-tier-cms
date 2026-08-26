@@ -173,9 +173,32 @@ export function ArticleEditor() {
   };
 
   const insertHtmlAtCursor = (html: string) => {
-    restoreSelection();
-    document.execCommand("insertHTML", false, html);
+    const root = editor.current;
+    if (!root) return false;
+
+    root.focus();
+    let range = savedRange.current?.cloneRange() || null;
+    if (!range || !root.contains(range.commonAncestorContainer)) {
+      range = document.createRange();
+      range.selectNodeContents(root);
+      range.collapse(false);
+    }
+
+    const fragment = range.createContextualFragment(html);
+    const lastInsertedNode = fragment.lastChild;
+    if (!lastInsertedNode) return false;
+
+    range.deleteContents();
+    range.insertNode(fragment);
+    range.setStartAfter(lastInsertedNode);
+    range.collapse(true);
+
+    const selection = window.getSelection();
+    selection?.removeAllRanges();
+    selection?.addRange(range);
+    savedRange.current = range.cloneRange();
     setEditorHtml(serializeEditorHtml());
+    return true;
   };
 
   const escapeAttribute = (value: string) =>
@@ -272,9 +295,13 @@ export function ArticleEditor() {
         ? "Video credit / caption (optional)"
         : "Photo credit / caption (optional)";
 
-      insertHtmlAtCursor(
+      const inserted = insertHtmlAtCursor(
         `<figure class="article-media-block">${mediaMarkup}<figcaption class="photo-credit" data-editor-caption-id="${captionId}" data-placeholder="${captionLabel}"></figcaption></figure><p><br></p>`
       );
+
+      if (!inserted) {
+        throw new Error("The media could not be inserted into the article body.");
+      }
 
       requestAnimationFrame(() => {
         const caption = editor.current?.querySelector<HTMLElement>(
