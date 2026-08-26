@@ -795,6 +795,29 @@
   min-height: 0;
 }
 
+.x-post-widget-target{
+  width:100%;
+  max-width:550px;
+  min-width:0;
+}
+
+.x-post-fallback{
+  display:block;
+  width:min(100%,550px);
+  margin:auto;
+  padding:14px 18px;
+  border:1px solid #d7dce3;
+  border-radius:10px;
+  background:#f7f9fb;
+  color:#b5172c;
+  font:600 14px/1.4 Inter,Arial,sans-serif;
+  text-align:center;
+}
+
+.x-post-embed-loaded>.x-post-fallback{
+  display:none;
+}
+
 .x-post-embed .twitter-tweet,
 .x-post-embed twitter-widget,
 .x-post-embed .twitter-tweet-rendered {
