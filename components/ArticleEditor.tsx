@@ -201,6 +201,78 @@ export function ArticleEditor() {
     return true;
   };
 
+  const insertMediaAtCursor = ({
+    url,
+    isMp4,
+    captionId,
+    captionLabel,
+  }: {
+    url: string;
+    isMp4: boolean;
+    captionId: string;
+    captionLabel: string;
+  }) => {
+    const root = editor.current;
+    if (!root) return false;
+
+    const figure = document.createElement("figure");
+    figure.className = "article-media-block";
+
+    if (isMp4) {
+      const video = document.createElement("video");
+      video.controls = true;
+      video.playsInline = true;
+      video.preload = "metadata";
+      video.src = url;
+      figure.appendChild(video);
+    } else {
+      const image = document.createElement("img");
+      image.src = url;
+      image.alt = "";
+      figure.appendChild(image);
+    }
+
+    const caption = document.createElement("figcaption");
+    caption.className = "photo-credit";
+    caption.dataset.editorCaptionId = captionId;
+    caption.dataset.placeholder = captionLabel;
+    figure.appendChild(caption);
+
+    const trailingParagraph = document.createElement("p");
+    trailingParagraph.appendChild(document.createElement("br"));
+
+    // Native mobile photo pickers often discard the contenteditable selection.
+    // Insert after its top-level block when possible; otherwise append safely.
+    const saved = savedRange.current;
+    let topLevelBlock: Node | null = null;
+    if (saved && root.contains(saved.commonAncestorContainer)) {
+      topLevelBlock = saved.commonAncestorContainer;
+      if (topLevelBlock === root) topLevelBlock = null;
+      while (topLevelBlock?.parentNode && topLevelBlock.parentNode !== root) {
+        topLevelBlock = topLevelBlock.parentNode;
+      }
+    }
+
+    if (topLevelBlock?.parentNode === root) {
+      const nextSibling = topLevelBlock.nextSibling;
+      root.insertBefore(figure, nextSibling);
+      root.insertBefore(trailingParagraph, nextSibling);
+    } else {
+      root.append(figure, trailingParagraph);
+    }
+
+    const range = document.createRange();
+    range.selectNodeContents(caption);
+    range.collapse(false);
+    root.focus();
+    const selection = window.getSelection();
+    selection?.removeAllRanges();
+    selection?.addRange(range);
+    savedRange.current = range.cloneRange();
+    setEditorHtml(serializeEditorHtml());
+    return true;
+  };
+
   const escapeAttribute = (value: string) =>
     value.replace(/&/g, "&amp;").replace(/"/g, "&quot;");
 
@@ -288,16 +360,16 @@ export function ArticleEditor() {
       const captionId = `caption-${Date.now()}-${Math.random()
         .toString(36)
         .slice(2)}`;
-      const mediaMarkup = isMp4
-        ? `<video controls playsinline preload="metadata" src="${url}"></video>`
-        : `<img src="${url}" alt="" />`;
       const captionLabel = isMp4
         ? "Video credit / caption (optional)"
         : "Photo credit / caption (optional)";
 
-      const inserted = insertHtmlAtCursor(
-        `<figure class="article-media-block">${mediaMarkup}<figcaption class="photo-credit" data-editor-caption-id="${captionId}" data-placeholder="${captionLabel}"></figcaption></figure><p><br></p>`
-      );
+      const inserted = insertMediaAtCursor({
+        url,
+        isMp4,
+        captionId,
+        captionLabel,
+      });
 
       if (!inserted) {
         throw new Error("The media could not be inserted into the article body.");
@@ -601,9 +673,12 @@ const deleteArticle = async () => {
               disabled={busy}
               type="file"
               accept="image/png,image/jpeg,image/webp,video/mp4"
-              onChange={(e: ChangeEvent<HTMLInputElement>) =>
-                insertMedia(e.target.files?.[0])
-              }
+              onChange={(e: ChangeEvent<HTMLInputElement>) => {
+                const input = e.currentTarget;
+                void insertMedia(input.files?.[0]).finally(() => {
+                  input.value = "";
+                });
+              }}
             />
           </label>
         </div>
