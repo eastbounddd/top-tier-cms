@@ -38,6 +38,10 @@ export function ArticleEditor() {
   const editor = useRef<HTMLDivElement>(null);
   const mediaInput = useRef<HTMLInputElement>(null);
   const mediaInsertionMarker = useRef<HTMLSpanElement | null>(null);
+  const mediaInsertionBookmark = useRef<{
+    childIndex: number;
+    replaceEmptyBlock: boolean;
+  } | null>(null);
   const savedRange = useRef<Range | null>(null);
 
   const [form, setForm] = useState<FormState>({
@@ -137,6 +141,29 @@ export function ArticleEditor() {
     const root = editor.current;
     const saved = savedRange.current?.cloneRange();
     if (!root || !saved || !root.contains(saved.commonAncestorContainer)) return;
+
+    if (saved.startContainer === root) {
+      mediaInsertionBookmark.current = {
+        childIndex: saved.startOffset,
+        replaceEmptyBlock: false,
+      };
+    } else {
+      let topLevelBlock: Node | null = saved.startContainer;
+      while (topLevelBlock?.parentNode && topLevelBlock.parentNode !== root) {
+        topLevelBlock = topLevelBlock.parentNode;
+      }
+      if (topLevelBlock?.parentNode === root) {
+        const childIndex = Array.prototype.indexOf.call(root.childNodes, topLevelBlock);
+        const element = topLevelBlock as HTMLElement;
+        const text = element.textContent?.replace(/\u200b/g, "").trim();
+        const hasMedia = Boolean(element.querySelector?.("img,video,iframe"));
+        const replaceEmptyBlock = !text && !hasMedia;
+        mediaInsertionBookmark.current = {
+          childIndex: childIndex + (replaceEmptyBlock ? 0 : 1),
+          replaceEmptyBlock,
+        };
+      }
+    }
 
     mediaInsertionMarker.current?.remove();
     const marker = document.createElement("span");
@@ -303,7 +330,20 @@ export function ArticleEditor() {
     if (marker !== insertionReference) marker?.remove();
     mediaInsertionMarker.current = null;
 
-    // Fall back to the saved range only when no marker was available.
+    // React/browser focus changes can remove a temporary marker. The saved
+    // top-level child index still identifies the chosen paragraph boundary.
+    const bookmark = mediaInsertionBookmark.current;
+    if (!insertionReference && !emptyMarkerBlock && bookmark) {
+      insertionReference = root.childNodes[bookmark.childIndex] || null;
+      if (bookmark.replaceEmptyBlock && insertionReference instanceof HTMLElement) {
+        const text = insertionReference.textContent?.replace(/\u200b/g, "").trim();
+        const hasMedia = Boolean(insertionReference.querySelector("img,video,iframe"));
+        if (!text && !hasMedia) emptyMarkerBlock = insertionReference;
+      }
+    }
+    mediaInsertionBookmark.current = null;
+
+    // Last resort for older saved content where no durable bookmark existed.
     const saved = savedRange.current;
     if (!insertionReference && !emptyMarkerBlock && saved && root.contains(saved.commonAncestorContainer)) {
       if (saved.startContainer === root) {
@@ -738,6 +778,7 @@ const deleteArticle = async () => {
             className="upload-button"
             disabled={busy}
             onPointerDown={prepareMediaInsertion}
+            onMouseDown={(event) => event.preventDefault()}
             onClick={() => {
               if (!mediaInsertionMarker.current?.isConnected) prepareMediaInsertion();
               mediaInput.current?.click();
@@ -756,6 +797,7 @@ const deleteArticle = async () => {
               if (!input.files?.[0]) {
                 mediaInsertionMarker.current?.remove();
                 mediaInsertionMarker.current = null;
+                mediaInsertionBookmark.current = null;
                 return;
               }
               void insertMedia(input.files?.[0]).finally(() => {
