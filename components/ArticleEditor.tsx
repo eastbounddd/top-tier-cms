@@ -55,6 +55,18 @@ export function ArticleEditor() {
   const [uploading, setUploading] = useState("");
   const [message, setMessage] = useState("");
 
+  const rememberEditorSelection = () => {
+    const selection = window.getSelection();
+    if (
+      selection?.rangeCount &&
+      editor.current &&
+      selection.anchorNode &&
+      editor.current.contains(selection.anchorNode)
+    ) {
+      savedRange.current = selection.getRangeAt(0).cloneRange();
+    }
+  };
+
   useEffect(() => {
     if (!id) return;
     const supabase = createClient();
@@ -106,21 +118,9 @@ export function ArticleEditor() {
   }, [id]);
 
   useEffect(() => {
-    const rememberSelection = () => {
-      const selection = window.getSelection();
-      if (
-        selection?.rangeCount &&
-        editor.current &&
-        selection.anchorNode &&
-        editor.current.contains(selection.anchorNode)
-      ) {
-        savedRange.current = selection.getRangeAt(0).cloneRange();
-      }
-    };
-
-    document.addEventListener("selectionchange", rememberSelection);
+    document.addEventListener("selectionchange", rememberEditorSelection);
     return () =>
-      document.removeEventListener("selectionchange", rememberSelection);
+      document.removeEventListener("selectionchange", rememberEditorSelection);
   }, []);
 
   const restoreSelection = () => {
@@ -245,22 +245,25 @@ export function ArticleEditor() {
     // Native mobile photo pickers often discard the contenteditable selection.
     // Insert after its top-level block when possible; otherwise append safely.
     const saved = savedRange.current;
-    let topLevelBlock: Node | null = null;
+    let insertionReference: ChildNode | null = null;
     if (saved && root.contains(saved.commonAncestorContainer)) {
-      topLevelBlock = saved.commonAncestorContainer;
-      if (topLevelBlock === root) topLevelBlock = null;
-      while (topLevelBlock?.parentNode && topLevelBlock.parentNode !== root) {
-        topLevelBlock = topLevelBlock.parentNode;
+      if (saved.startContainer === root) {
+        // A caret between paragraphs is represented as an offset directly in
+        // the editor root. Insert before the child at that exact offset.
+        insertionReference = root.childNodes[saved.startOffset] || null;
+      } else {
+        let topLevelBlock: Node | null = saved.startContainer;
+        while (topLevelBlock?.parentNode && topLevelBlock.parentNode !== root) {
+          topLevelBlock = topLevelBlock.parentNode;
+        }
+        if (topLevelBlock?.parentNode === root) {
+          insertionReference = topLevelBlock.nextSibling;
+        }
       }
     }
 
-    if (topLevelBlock?.parentNode === root) {
-      const nextSibling = topLevelBlock.nextSibling;
-      root.insertBefore(figure, nextSibling);
-      root.insertBefore(trailingParagraph, nextSibling);
-    } else {
-      root.append(figure, trailingParagraph);
-    }
+    root.insertBefore(figure, insertionReference);
+    root.insertBefore(trailingParagraph, insertionReference);
 
     const range = document.createRange();
     range.selectNodeContents(caption);
@@ -672,6 +675,7 @@ const deleteArticle = async () => {
             type="button"
             className="upload-button"
             disabled={busy}
+            onPointerDown={rememberEditorSelection}
             onClick={() => mediaInput.current?.click()}
           >
             + Photo / MP4
