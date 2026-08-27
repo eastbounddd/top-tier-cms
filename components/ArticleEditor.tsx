@@ -37,6 +37,7 @@ export function ArticleEditor() {
   const router = useRouter();
   const editor = useRef<HTMLDivElement>(null);
   const mediaInput = useRef<HTMLInputElement>(null);
+  const mediaInsertionMarker = useRef<HTMLSpanElement | null>(null);
   const savedRange = useRef<Range | null>(null);
 
   const [form, setForm] = useState<FormState>({
@@ -129,6 +130,27 @@ export function ArticleEditor() {
     const selection = window.getSelection();
     selection?.removeAllRanges();
     selection?.addRange(savedRange.current);
+  };
+
+  const prepareMediaInsertion = () => {
+    rememberEditorSelection();
+    const root = editor.current;
+    const saved = savedRange.current?.cloneRange();
+    if (!root || !saved || !root.contains(saved.commonAncestorContainer)) return;
+
+    mediaInsertionMarker.current?.remove();
+    const marker = document.createElement("span");
+    marker.className = "media-insertion-marker";
+    marker.contentEditable = "false";
+    marker.setAttribute("aria-hidden", "true");
+    marker.textContent = "\u200b";
+    saved.insertNode(marker);
+    mediaInsertionMarker.current = marker;
+
+    const range = document.createRange();
+    range.setStartAfter(marker);
+    range.collapse(true);
+    savedRange.current = range;
   };
 
   const upload = async (file: File, bucket: string) => {
@@ -242,11 +264,48 @@ export function ArticleEditor() {
     const trailingParagraph = document.createElement("p");
     trailingParagraph.appendChild(document.createElement("br"));
 
-    // Native mobile photo pickers often discard the contenteditable selection.
-    // Insert after its top-level block when possible; otherwise append safely.
-    const saved = savedRange.current;
+    // The marker survives focus changes and the native photo picker, unlike a
+    // browser Selection/Range on several mobile and desktop engines.
+    const marker = mediaInsertionMarker.current;
     let insertionReference: ChildNode | null = null;
-    if (saved && root.contains(saved.commonAncestorContainer)) {
+    let emptyMarkerBlock: ChildNode | null = null;
+    if (marker?.isConnected && root.contains(marker)) {
+      let topLevelBlock: Node = marker;
+      while (topLevelBlock.parentNode && topLevelBlock.parentNode !== root) {
+        topLevelBlock = topLevelBlock.parentNode;
+      }
+
+      if (topLevelBlock.parentNode === root) {
+        if (topLevelBlock === marker) {
+          insertionReference = marker;
+        } else {
+          const beforeMarker = document.createRange();
+          beforeMarker.selectNodeContents(topLevelBlock);
+          beforeMarker.setEndBefore(marker);
+          const hasContentBefore = Boolean(beforeMarker.toString().trim());
+          marker.remove();
+
+          const element = topLevelBlock as HTMLElement;
+          const remainingText = element.textContent?.replace(/\u200b/g, "").trim();
+          const hasMedia = Boolean(element.querySelector("img,video,iframe"));
+          if (!remainingText && !hasMedia) {
+            insertionReference = topLevelBlock as ChildNode;
+            emptyMarkerBlock = topLevelBlock as ChildNode;
+          } else {
+            insertionReference = hasContentBefore
+              ? topLevelBlock.nextSibling
+              : (topLevelBlock as ChildNode);
+          }
+        }
+      }
+    }
+
+    if (marker !== insertionReference) marker?.remove();
+    mediaInsertionMarker.current = null;
+
+    // Fall back to the saved range only when no marker was available.
+    const saved = savedRange.current;
+    if (!insertionReference && !emptyMarkerBlock && saved && root.contains(saved.commonAncestorContainer)) {
       if (saved.startContainer === root) {
         // A caret between paragraphs is represented as an offset directly in
         // the editor root. Insert before the child at that exact offset.
@@ -264,6 +323,8 @@ export function ArticleEditor() {
 
     root.insertBefore(figure, insertionReference);
     root.insertBefore(trailingParagraph, insertionReference);
+    if (marker === insertionReference) marker?.remove();
+    emptyMarkerBlock?.remove();
 
     const range = document.createRange();
     range.selectNodeContents(caption);
@@ -298,6 +359,7 @@ export function ArticleEditor() {
         preview.dataset.xUrl || preview.querySelector("a")?.getAttribute("href") || "";
       preview.replaceWith(paragraph);
     });
+    clone.querySelectorAll(".media-insertion-marker").forEach((marker) => marker.remove());
     clone.querySelectorAll<HTMLElement>("figcaption.photo-credit").forEach((caption) => {
       const text = caption.textContent?.trim() || "";
       if (!text) {
@@ -675,8 +737,11 @@ const deleteArticle = async () => {
             type="button"
             className="upload-button"
             disabled={busy}
-            onPointerDown={rememberEditorSelection}
-            onClick={() => mediaInput.current?.click()}
+            onPointerDown={prepareMediaInsertion}
+            onClick={() => {
+              if (!mediaInsertionMarker.current?.isConnected) prepareMediaInsertion();
+              mediaInput.current?.click();
+            }}
           >
             + Photo / MP4
           </button>
@@ -688,6 +753,11 @@ const deleteArticle = async () => {
             accept="image/*,video/mp4"
             onChange={(e: ChangeEvent<HTMLInputElement>) => {
               const input = e.currentTarget;
+              if (!input.files?.[0]) {
+                mediaInsertionMarker.current?.remove();
+                mediaInsertionMarker.current = null;
+                return;
+              }
               void insertMedia(input.files?.[0]).finally(() => {
                 input.value = "";
               });

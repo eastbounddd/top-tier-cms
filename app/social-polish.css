@@ -447,6 +447,14 @@
   color:#8a9098;
 }
 
+.media-insertion-marker{
+  display:inline-block;
+  width:0;
+  height:0;
+  overflow:hidden;
+  pointer-events:none;
+}
+
 .prose .twitter-tweet{
   margin:32px auto!important;
 }
