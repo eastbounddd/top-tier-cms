@@ -36,6 +36,7 @@ export function ArticleEditor() {
   const id = params.get("id");
   const router = useRouter();
   const editor = useRef<HTMLDivElement>(null);
+  const mediaInput = useRef<HTMLInputElement>(null);
   const savedRange = useRef<Range | null>(null);
 
   const [form, setForm] = useState<FormState>({
@@ -144,7 +145,7 @@ export function ArticleEditor() {
     const { error } = await supabase.storage.from(bucket).upload(path, file, {
       upsert: false,
       cacheControl: "3600",
-      contentType: file.type,
+      ...(file.type ? { contentType: file.type } : {}),
     });
 
     if (error) throw error;
@@ -339,11 +340,12 @@ export function ArticleEditor() {
   const insertMedia = async (file?: File) => {
     if (!file || !editor.current) return;
 
-    const isMp4 = file.type === "video/mp4";
-    const isImage = ["image/jpeg", "image/png", "image/webp"].includes(file.type);
+    const isMp4 = file.type === "video/mp4" || /\.mp4$/i.test(file.name);
+    const isImage = file.type.startsWith("image/") ||
+      /\.(?:avif|gif|heic|heif|jpe?g|png|webp)$/i.test(file.name);
 
     if (!isMp4 && !isImage) {
-      setMessage("Please upload a JPG, PNG, WEBP, or MP4 file.");
+      setMessage("Please choose an image or MP4 video file.");
       return;
     }
 
@@ -666,21 +668,27 @@ const deleteArticle = async () => {
           <button type="button" onClick={addLink}>
             🔗 Link
           </button>
-          <label className="upload-button">
+          <button
+            type="button"
+            className="upload-button"
+            disabled={busy}
+            onClick={() => mediaInput.current?.click()}
+          >
             + Photo / MP4
-            <input
-              hidden
-              disabled={busy}
-              type="file"
-              accept="image/png,image/jpeg,image/webp,video/mp4"
-              onChange={(e: ChangeEvent<HTMLInputElement>) => {
-                const input = e.currentTarget;
-                void insertMedia(input.files?.[0]).finally(() => {
-                  input.value = "";
-                });
-              }}
-            />
-          </label>
+          </button>
+          <input
+            ref={mediaInput}
+            hidden
+            disabled={busy}
+            type="file"
+            accept="image/*,video/mp4"
+            onChange={(e: ChangeEvent<HTMLInputElement>) => {
+              const input = e.currentTarget;
+              void insertMedia(input.files?.[0]).finally(() => {
+                input.value = "";
+              });
+            }}
+          />
         </div>
 
         <div
