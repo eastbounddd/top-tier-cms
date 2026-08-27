@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useRef } from "react";
 
 const accounts = [
   ["Top Tier","toptierstatex"],
@@ -14,7 +14,6 @@ const accounts = [
   ["Top Tier Hockey","toptierpucks"],
   ["Top Tier Arkansas","toptierarkansas"],
   ["Top Tier Oklahoma","toptieroklahoma"],
-  ["Top Tier Notre Dame","toptiernd"],
   ["Top Tier SMU","toptiersmu"],
   ["Top Tier Vols","TopTierVols"],
   ["Top Tier LSU","toptierlsu"],
@@ -48,33 +47,95 @@ const accounts = [
   ["Top Tier Kentucky","toptierbbn"],
 ] as const;
 
+const doubledAccounts = [...accounts, ...accounts] as const;
+
 export function NetworkCarousel() {
   const viewport = useRef<HTMLDivElement>(null);
+  const track = useRef<HTMLDivElement>(null);
   const scrubber = useRef<HTMLInputElement>(null);
   const paused = useRef(false);
   const touching = useRef(false);
   const scrollPosition = useRef(0);
+  const loopDistance = useRef(0);
+  const desktopTransform = useRef(false);
+  const reducedMotion = useRef(false);
   const resumeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const doubled = useMemo(() => [...accounts, ...accounts], []);
 
   useEffect(() => {
     let frame = 0;
     let previous = performance.now();
     let lastScrubberUpdate = 0;
+    const el = viewport.current;
+    const row = track.current;
+    if (!el || !row) return;
+
+    const desktopQuery = window.matchMedia("(hover: hover) and (pointer: fine)");
+    const motionQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
+
+    const measureLoop = () => {
+      const cards = row.querySelectorAll<HTMLElement>(".network-card");
+      const first = cards[0];
+      const duplicate = cards[accounts.length];
+      loopDistance.current = first && duplicate
+        ? duplicate.offsetLeft - first.offsetLeft
+        : row.scrollWidth / 2;
+    };
+
+    const paintPosition = () => {
+      if (desktopTransform.current) {
+        row.style.transform = `translate3d(${-scrollPosition.current}px,0,0)`;
+      } else {
+        el.scrollLeft = scrollPosition.current;
+      }
+    };
+
+    const syncPreferences = () => {
+      const wasDesktop = desktopTransform.current;
+      desktopTransform.current = desktopQuery.matches;
+      reducedMotion.current = motionQuery.matches;
+
+      if (!wasDesktop && desktopTransform.current) {
+        scrollPosition.current = el.scrollLeft;
+        el.scrollLeft = 0;
+      } else if (wasDesktop && !desktopTransform.current) {
+        row.style.transform = "";
+      }
+
+      paintPosition();
+    };
+
+    measureLoop();
+    syncPreferences();
+    const resizeObserver = new ResizeObserver(() => {
+      measureLoop();
+      const midpoint = loopDistance.current;
+      if (midpoint > 0) scrollPosition.current %= midpoint;
+      paintPosition();
+    });
+    resizeObserver.observe(row);
+    const addQueryListener = (query: MediaQueryList) => {
+      if (query.addEventListener) query.addEventListener("change", syncPreferences);
+      else query.addListener(syncPreferences);
+    };
+    const removeQueryListener = (query: MediaQueryList) => {
+      if (query.removeEventListener) query.removeEventListener("change", syncPreferences);
+      else query.removeListener(syncPreferences);
+    };
+    addQueryListener(desktopQuery);
+    addQueryListener(motionQuery);
 
     const tick = (now: number) => {
-      const el = viewport.current;
-      if (el && !paused.current) {
+      if (!paused.current && !reducedMotion.current) {
         const delta = Math.min(40, now - previous);
         scrollPosition.current += delta * 0.045;
 
-        const midpoint = el.scrollWidth / 2;
+        const midpoint = loopDistance.current;
         if (midpoint > 0 && scrollPosition.current >= midpoint) {
           scrollPosition.current -= midpoint;
         }
 
         if (midpoint > 0) {
-          el.scrollLeft = scrollPosition.current;
+          paintPosition();
           if (scrubber.current && now - lastScrubberUpdate >= 100) {
             scrubber.current.value = String(
               Math.round((scrollPosition.current / midpoint) * 1000)
@@ -90,6 +151,9 @@ export function NetworkCarousel() {
     frame = requestAnimationFrame(tick);
     return () => {
       cancelAnimationFrame(frame);
+      resizeObserver.disconnect();
+      removeQueryListener(desktopQuery);
+      removeQueryListener(motionQuery);
       if (resumeTimer.current !== null) {
         clearTimeout(resumeTimer.current);
       }
@@ -97,6 +161,10 @@ export function NetworkCarousel() {
   }, []);
 
   const resumeAfterTouchScroll = (el: HTMLDivElement) => {
+    if (desktopTransform.current) {
+      paused.current = false;
+      return;
+    }
     if (resumeTimer.current !== null) {
       clearTimeout(resumeTimer.current);
     }
@@ -111,10 +179,15 @@ export function NetworkCarousel() {
 
   const jump = (value: number) => {
     const el = viewport.current;
-    if (el) {
-      const midpoint = el.scrollWidth / 2;
+    const row = track.current;
+    if (el && row) {
+      const midpoint = loopDistance.current;
       scrollPosition.current = (value / 1000) * midpoint;
-      el.scrollLeft = scrollPosition.current;
+      if (desktopTransform.current) {
+        row.style.transform = `translate3d(${-scrollPosition.current}px,0,0)`;
+      } else {
+        el.scrollLeft = scrollPosition.current;
+      }
     }
   };
 
@@ -154,7 +227,7 @@ export function NetworkCarousel() {
           resumeAfterTouchScroll(event.currentTarget);
         }}
         onScroll={(event) => {
-          if (paused.current) {
+          if (paused.current && !desktopTransform.current) {
             scrollPosition.current = event.currentTarget.scrollLeft;
             if (!touching.current) {
               resumeAfterTouchScroll(event.currentTarget);
@@ -162,8 +235,8 @@ export function NetworkCarousel() {
           }
         }}
       >
-        <div className="network-track">
-          {doubled.map(([name, handle], i) => (
+        <div ref={track} className="network-track">
+          {doubledAccounts.map(([name, handle], i) => (
             <a
               className="network-card"
               key={`${handle}-${i}`}

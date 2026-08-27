@@ -14,3 +14,6 @@
 @media(max-width:600px){.school-card-meta{align-items:flex-start;flex-direction:column;gap:7px}.school-kicker-row{align-items:flex-start;flex-direction:column}}
 
 .network-viewport{scroll-behavior:auto;overscroll-behavior-inline:contain;-webkit-overflow-scrolling:touch}
+
+@media (hover:hover) and (pointer:fine){.network-viewport{overflow-x:hidden}.network-track{will-change:transform}}
+@media (prefers-reduced-motion:reduce){.network-track{will-change:auto}.network-card{transition:none}}
