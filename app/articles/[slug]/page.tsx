@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
+import { unstable_noStore as noStore } from "next/cache";
 import { notFound } from "next/navigation";
+import { cache } from "react";
 import { createClient } from "@/lib/supabase/server";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
@@ -8,6 +10,11 @@ import { ArticleShare } from "@/components/ArticleShare";
 
 const siteUrl =
   (process.env.NEXT_PUBLIC_SITE_URL || "https://www.toptierstate.net").replace(/\/$/, "");
+
+// Published article metadata must reflect edits immediately, especially when
+// a cover image is replaced after X has previously crawled the article URL.
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
 
 function getPublicImageUrl(value: string | null | undefined) {
   const source = value?.trim() || "/top-tier-logo.png";
@@ -24,7 +31,8 @@ function getImageContentType(value: string) {
   return undefined;
 }
 
-async function getArticle(slug: string) {
+const getArticle = cache(async (slug: string) => {
+  noStore();
   const supabase = await createClient();
   const { data } = await supabase
     .from("articles")
@@ -34,7 +42,7 @@ async function getArticle(slug: string) {
     .single();
 
   return data;
-}
+});
 
 export async function generateMetadata({
   params,

@@ -189,7 +189,7 @@ export function ArticleEditor() {
     if (!user) throw new Error("You are not signed in.");
 
     const cleanName = file.name.replace(/[^a-zA-Z0-9._-]/g, "-");
-    const path = `${user.id}/${Date.now()}-${cleanName}`;
+    const path = `${user.id}/${Date.now()}-${crypto.randomUUID()}-${cleanName}`;
 
     const { error } = await supabase.storage.from(bucket).upload(path, file, {
       upsert: false,
