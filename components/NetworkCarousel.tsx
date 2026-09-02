@@ -46,6 +46,7 @@ const accounts = [
   ["Top Tier Utah","toptierutes"],
   ["Top Tier Kentucky","toptierbbn"],
   ["Top Tier Mizzou","TopTierMizzou"],
+  ["Top Tier Marshall","TopTierMarshall"],
 ] as const;
 
 const doubledAccounts = [...accounts, ...accounts] as const;

@@ -17,6 +17,7 @@ export const schools = [
   { name: "Tennessee", slug: "tennessee", xHandle: "TopTierVols" },
   { name: "Kentucky", slug: "kentucky", xHandle: "toptierbbn" },
   { name: "Missouri", slug: "missouri", xHandle: "TopTierMizzou" },
+  { name: "Marshall", slug: "marshall", xHandle: "TopTierMarshall" },
   { name: "Mississippi State", slug: "mississippi-state", xHandle: "toptiermissst" },
 ] as const;
 
