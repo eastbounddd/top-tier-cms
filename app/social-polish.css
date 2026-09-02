@@ -9,6 +9,11 @@
 /* Cleaner breathing room */
 .content-section{padding:76px 0}
 .section-row{margin-bottom:30px}
+.section-action,.articles-load-more{display:flex;justify-content:center;margin-top:32px}
+.articles-load-more{min-height:48px;align-items:center;flex-direction:column;gap:10px}
+.articles-load-more .error{margin:0}
+.articles-load-more .red-button:disabled{cursor:wait;opacity:.65}
+.articles-index .schools-heading{margin-bottom:34px}
 .top-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:24px}
 .news-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:24px}
 

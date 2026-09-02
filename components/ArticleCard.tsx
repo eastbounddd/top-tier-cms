@@ -1,12 +1,13 @@
 import Link from "next/link";
 
-type Article = {
+export type Article = {
   id: string;
   title: string;
   slug: string;
   excerpt?: string | null;
   cover_image_url?: string | null;
   category: string;
+  school?: string | null;
   published_at?: string | null;
   is_top_story?: boolean;
 };
@@ -14,9 +15,11 @@ type Article = {
 export function ArticleCard({
   article,
   featured = false,
+  metaLabel,
 }: {
   article: Article;
   featured?: boolean;
+  metaLabel?: string;
 }) {
   const image = article.cover_image_url || "/top-tier-logo.png";
   const date = article.published_at
@@ -45,7 +48,7 @@ export function ArticleCard({
 
       <div className="article-copy">
         <div className="article-meta-row">
-          <small>{article.category}</small>
+          <small>{metaLabel || article.category}</small>
           {date && <time>{date}</time>}
         </div>
 

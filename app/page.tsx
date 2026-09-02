@@ -35,6 +35,7 @@ export default async function Home() {
   } catch {}
   const top = articles.filter(a => a.is_top_story).concat(articles.filter(a => !a.is_top_story)).slice(0,5);
   const college = articles.filter(a => a.category !== "Other News").slice(0,8);
+  const latestArticles = articles.slice(0,4);
   const other = articles.filter(a => a.category === "Other News").slice(0,4);
   const schoolArticles = articles.filter(a => a.school).slice(0,8);
   return <><Header/><main>
@@ -42,6 +43,7 @@ export default async function Home() {
     <NetworkCarousel/><UpcomingGames/>
     <section id="top-stories" className="shell content-section"><div className="section-row"><div><small>RIGHT NOW</small><h2>Top Stories</h2></div></div>{top.length?<div className="top-grid">{top.map((a,i) => <ArticleCard key={a.id} article={a} featured={i===0}/>)}</div>:<p className="muted">No stories have been published yet.</p>}</section>
     <section id="college-football" className="dark-band"><div className="shell content-section"><div className="section-row"><div><small>THE DAILY HUDDLE</small><h2>College Football News</h2></div></div>{college.length?<div className="news-grid">{college.map(a => <ArticleCard key={a.id} article={a}/>)}</div>:<p className="muted">No college football stories have been published yet.</p>}</div></section>
+    <section className="shell content-section"><div className="section-row"><div><small>LATEST FROM TOP TIER</small><h2>All Articles</h2></div></div>{latestArticles.length?<div className="news-grid">{latestArticles.map(a => <ArticleCard key={a.id} article={a}/>)}</div>:<p className="muted">No articles have been published yet.</p>}<div className="section-action"><Link href="/articles" className="red-button">View All Articles →</Link></div></section>
     <section id="other-news" className="shell content-section"><div className="section-row"><div><small>AROUND THE SPORTS WORLD</small><h2>Other News</h2></div></div>{other.length?<div className="news-grid">{other.map(a => <ArticleCard key={a.id} article={a}/>)}</div>:<p className="muted">No other news stories have been published yet.</p>}</section>
     <section className="dark-band"><div className="shell content-section"><div className="section-row"><div><small>FROM OUR SCHOOL WRITERS</small><h2>School Coverage</h2></div><Link href="/schools" className="red-button">View All Schools →</Link></div>{schoolArticles.length?<div className="news-grid">{schoolArticles.map(a => <ArticleCard key={a.id} article={a}/>)}</div>:<p className="muted">School articles will appear here as they are published.</p>}</div></section>
     <section className="shell content-section"><div className="section-row"><div><small>THE LATEST PROSPECT NEWS</small><h2>Recruiting News</h2></div><Link href="/recruiting" className="red-button">View More Recruiting →</Link></div>{recruitingArticles.length?<div className="news-grid">{recruitingArticles.map(a => <ArticleCard key={a.id} article={a}/>)}</div>:<p className="muted">Recruiting stories will appear here as they are published.</p>}</section>
