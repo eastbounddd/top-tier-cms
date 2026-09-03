@@ -23,12 +23,9 @@ function getPublicImageUrl(value: string | null | undefined) {
   return new URL(source, `${siteUrl}/`).toString();
 }
 
-function getImageContentType(value: string) {
-  const extension = new URL(value).pathname.split(".").pop()?.toLowerCase();
-  if (extension === "jpg" || extension === "jpeg") return "image/jpeg";
-  if (extension === "png") return "image/png";
-  if (extension === "webp") return "image/webp";
-  return undefined;
+function getSocialImageUrl(slug: string, coverImageUrl: string) {
+  const fileVersion = new URL(coverImageUrl).pathname.split("/").pop() || coverImageUrl;
+  return `${siteUrl}/social-images/${encodeURIComponent(slug)}?v=${encodeURIComponent(fileVersion)}`;
 }
 
 const getArticle = cache(async (slug: string) => {
@@ -61,7 +58,7 @@ export async function generateMetadata({
 
   const canonical = `${siteUrl}/articles/${data.slug}`;
   const image = getPublicImageUrl(data.cover_image_url);
-  const imageType = getImageContentType(image);
+  const socialImage = getSocialImageUrl(data.slug, image);
   const description =
     data.excerpt?.trim() ||
     "Read the latest college football news, analysis and original reporting from Top Tier.";
@@ -85,9 +82,12 @@ export async function generateMetadata({
       section: data.category,
       images: [
         {
-          url: image,
+          url: socialImage,
+          secureUrl: socialImage,
           alt: data.title,
-          type: imageType,
+          type: "image/png",
+          width: 1200,
+          height: 675,
         },
       ],
     },
@@ -95,7 +95,7 @@ export async function generateMetadata({
       card: "summary_large_image",
       title: data.title,
       description,
-      images: [{ url: image, alt: data.title }],
+      images: [{ url: socialImage, secureUrl: socialImage, alt: data.title }],
     },
   };
 }
