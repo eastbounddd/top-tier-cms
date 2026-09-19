@@ -1,11 +1,13 @@
 import { NextResponse } from "next/server";
 
-export const revalidate = 600;
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
 
 const ESPN_SCOREBOARD_URL =
   "https://site.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard";
-const WINDOW_DAYS = 35;
-const MAX_WINDOWS = 11;
+const DAYS_PER_BATCH = 7;
+const MAX_DAYS_AHEAD = 70;
+const CACHE_SECONDS = 300;
 
 const formatDate = (date: Date) =>
   date.toISOString().slice(0, 10).replaceAll("-", "");
@@ -13,32 +15,34 @@ const formatDate = (date: Date) =>
 async function getNextEvents() {
   const today = new Date();
   today.setUTCHours(0, 0, 0, 0);
+  // Include yesterday so games already in progress after midnight UTC remain visible.
+  today.setUTCDate(today.getUTCDate() - 1);
 
-  for (let windowIndex = 0; windowIndex < MAX_WINDOWS; windowIndex += 1) {
-    const start = new Date(today);
-    start.setUTCDate(start.getUTCDate() + windowIndex * WINDOW_DAYS);
-
-    const end = new Date(start);
-    end.setUTCDate(end.getUTCDate() + WINDOW_DAYS - 1);
-
-    const params = new URLSearchParams({
-      dates: `${formatDate(start)}-${formatDate(end)}`,
-      groups: "80",
-      limit: "100",
+  for (let dayOffset = 0; dayOffset < MAX_DAYS_AHEAD; dayOffset += DAYS_PER_BATCH) {
+    const days = Array.from({ length: DAYS_PER_BATCH }, (_, index) => {
+      const date = new Date(today);
+      date.setUTCDate(date.getUTCDate() + dayOffset + index);
+      return date;
     });
 
-    const response = await fetch(`${ESPN_SCOREBOARD_URL}?${params}`, {
-      next: { revalidate: 600 },
-      headers: { "User-Agent": "TopTierMedia/1.0" },
-    });
+    const responses = await Promise.all(days.map(async (date) => {
+      const params = new URLSearchParams({
+        dates: formatDate(date),
+        groups: "80",
+        limit: "100",
+      });
+      const response = await fetch(`${ESPN_SCOREBOARD_URL}?${params}`, {
+        cache: "no-store",
+        headers: { "User-Agent": "TopTierMedia/1.0" },
+      });
+      if (!response.ok) {
+        throw new Error(`ESPN request failed with status ${response.status}`);
+      }
+      const data = await response.json();
+      return Array.isArray(data.events) ? data.events : [];
+    }));
 
-    if (!response.ok) {
-      throw new Error(`ESPN request failed with status ${response.status}`);
-    }
-
-    const data = await response.json();
-    const events = Array.isArray(data.events) ? data.events : [];
-
+    const events = responses.flat();
     if (events.length > 0) return events;
   }
 
@@ -48,7 +52,7 @@ async function getNextEvents() {
 export async function GET() {
   try {
     const events = await getNextEvents();
-    const now = Date.now();
+    const earliestGameTime = Date.now() - 8 * 60 * 60 * 1000;
 
     const games = events
       .map((event: any) => {
@@ -66,6 +70,7 @@ export async function GET() {
           id: event.id,
           date: event.date,
           status: event.status?.type?.shortDetail ?? "Scheduled",
+          state: event.status?.type?.state,
           completed: Boolean(event.status?.type?.completed),
           network: competition?.broadcasts?.[0]?.names?.[0],
           venue: competition?.venue?.fullName,
@@ -75,7 +80,8 @@ export async function GET() {
       })
       .filter(
         (game: any) =>
-          (!game.completed || new Date(game.date).getTime() >= now) &&
+          !game.completed &&
+          (game.state === "in" || new Date(game.date).getTime() >= earliestGameTime) &&
           (game.home.name !== "TBD" || game.away.name !== "TBD")
       )
       .sort(
@@ -83,9 +89,16 @@ export async function GET() {
           new Date(first.date).getTime() - new Date(second.date).getTime()
       )
       .slice(0, 12)
-      .map(({ completed: _completed, ...game }: any) => game);
+      .map(({ completed: _completed, state: _state, ...game }: any) => game);
 
-    return NextResponse.json({ games });
+    return NextResponse.json(
+      { games, refreshedAt: new Date().toISOString() },
+      {
+        headers: {
+          "Cache-Control": `public, s-maxage=${CACHE_SECONDS}, stale-while-revalidate=60`,
+        },
+      }
+    );
   } catch {
     return NextResponse.json(
       { games: [], error: "Unable to load ESPN schedule" },
