@@ -5,9 +5,11 @@ export const revalidate = 0;
 
 const ESPN_SCOREBOARD_URL =
   "https://site.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard";
-const DAYS_PER_BATCH = 7;
 const MAX_DAYS_AHEAD = 70;
+const GAME_LIMIT = 12;
 const CACHE_SECONDS = 300;
+const ESPN_TIMEOUT_MS = 6_000;
+const MAX_CONSECUTIVE_FAILURES = 3;
 
 const formatDate = (date: Date) =>
   date.toISOString().slice(0, 10).replaceAll("-", "");
@@ -17,15 +19,19 @@ async function getNextEvents() {
   today.setUTCHours(0, 0, 0, 0);
   // Include yesterday so games already in progress after midnight UTC remain visible.
   today.setUTCDate(today.getUTCDate() - 1);
+  const earliestGameTime = Date.now() - 8 * 60 * 60 * 1000;
+  const events: any[] = [];
+  let successfulRequests = 0;
+  let consecutiveFailures = 0;
+  const failures: string[] = [];
 
-  for (let dayOffset = 0; dayOffset < MAX_DAYS_AHEAD; dayOffset += DAYS_PER_BATCH) {
-    const days = Array.from({ length: DAYS_PER_BATCH }, (_, index) => {
-      const date = new Date(today);
-      date.setUTCDate(date.getUTCDate() + dayOffset + index);
-      return date;
-    });
+  // Request one day at a time. ESPN rejects date ranges, and sending a burst of
+  // requests can be rate-limited in serverless environments.
+  for (let dayOffset = 0; dayOffset < MAX_DAYS_AHEAD; dayOffset += 1) {
+    const date = new Date(today);
+    date.setUTCDate(date.getUTCDate() + dayOffset);
 
-    const responses = await Promise.all(days.map(async (date) => {
+    try {
       const params = new URLSearchParams({
         dates: formatDate(date),
         groups: "80",
@@ -33,20 +39,42 @@ async function getNextEvents() {
       });
       const response = await fetch(`${ESPN_SCOREBOARD_URL}?${params}`, {
         cache: "no-store",
-        headers: { "User-Agent": "TopTierMedia/1.0" },
+        headers: { Accept: "application/json" },
+        signal: AbortSignal.timeout(ESPN_TIMEOUT_MS),
       });
       if (!response.ok) {
         throw new Error(`ESPN request failed with status ${response.status}`);
       }
       const data = await response.json();
-      return Array.isArray(data.events) ? data.events : [];
-    }));
+      successfulRequests += 1;
+      consecutiveFailures = 0;
+      if (Array.isArray(data.events)) events.push(...data.events);
+    } catch (error) {
+      consecutiveFailures += 1;
+      failures.push(
+        `${formatDate(date)}: ${error instanceof Error ? error.message : "Unknown error"}`
+      );
+      if (consecutiveFailures >= MAX_CONSECUTIVE_FAILURES) break;
+      continue;
+    }
 
-    const events = responses.flat();
-    if (events.length > 0) return events;
+    const currentEventCount = events.filter((event) => {
+      const status = event.status?.type;
+      return (
+        !status?.completed &&
+        (status?.state === "in" ||
+          new Date(event.date).getTime() >= earliestGameTime)
+      );
+    }).length;
+
+    if (currentEventCount >= GAME_LIMIT) return events;
   }
 
-  return [];
+  if (successfulRequests === 0) {
+    throw new Error(`Every ESPN request failed (${failures.join(", ")})`);
+  }
+
+  return events;
 }
 
 export async function GET() {
@@ -88,7 +116,7 @@ export async function GET() {
         (first: any, second: any) =>
           new Date(first.date).getTime() - new Date(second.date).getTime()
       )
-      .slice(0, 12)
+      .slice(0, GAME_LIMIT)
       .map(({ completed: _completed, state: _state, ...game }: any) => game);
 
     return NextResponse.json(
@@ -99,10 +127,14 @@ export async function GET() {
         },
       }
     );
-  } catch {
+  } catch (error) {
+    console.error("Unable to load ESPN schedule", error);
     return NextResponse.json(
       { games: [], error: "Unable to load ESPN schedule" },
-      { status: 502 }
+      {
+        status: 502,
+        headers: { "Cache-Control": "no-store" },
+      }
     );
   }
 }
