@@ -7,6 +7,7 @@ import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { RenderedArticleContent } from "@/components/RenderedArticleContent";
 import { ArticleShare } from "@/components/ArticleShare";
+import { NewsletterSignup } from "@/components/NewsletterSignup";
 
 const siteUrl =
   (process.env.NEXT_PUBLIC_SITE_URL || "https://www.toptierstate.net").replace(/\/$/, "");
@@ -187,6 +188,7 @@ export default async function ArticlePage({
         )}
 
         <RenderedArticleContent html={body} className="prose" />
+        <NewsletterSignup variant="article" />
       </main>
 
       <Footer />

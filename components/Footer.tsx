@@ -2,11 +2,12 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
+import { NewsletterSignup } from "@/components/NewsletterSignup";
 
 export function Footer() {
   const [modal, setModal] = useState<"advertise" | "story" | null>(null);
   return <>
-    <footer><div className="shell footer-grid">
+    <footer><div className="shell"><NewsletterSignup variant="footer" /></div><div className="shell footer-grid">
       <div><Image src="/top-tier-logo.png" alt="Top Tier" width={170} height={170} className="footer-logo"/><p>Independent sports media built for fans who want the story before everyone else.</p></div>
       <div><h4>Coverage</h4><Link href="/#college-football">College Football</Link><Link href="/#other-news">Other News</Link></div>
       <div><h4>Company</h4><a href="#">About</a><button className="text-button" onClick={() => setModal("advertise")}>Advertise</button><a href="mailto:Partners@ttmediaco.net">Contact</a></div>
