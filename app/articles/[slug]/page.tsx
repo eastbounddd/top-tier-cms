@@ -8,26 +8,12 @@ import { Footer } from "@/components/Footer";
 import { RenderedArticleContent } from "@/components/RenderedArticleContent";
 import { ArticleShare } from "@/components/ArticleShare";
 import { NewsletterSignup } from "@/components/NewsletterSignup";
-
-const siteUrl =
-  (process.env.NEXT_PUBLIC_SITE_URL || "https://www.toptierstate.net").replace(/\/$/, "");
+import { getArticleImage, getSocialImageUrl, siteUrl } from "@/lib/articleSocialImage";
 
 // Published article metadata must reflect edits immediately, especially when
 // a cover image is replaced after X has previously crawled the article URL.
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
-
-function getPublicImageUrl(value: string | null | undefined) {
-  const source = value?.trim() || "/top-tier-logo.png";
-
-  if (source.startsWith("//")) return `https:${source}`;
-  return new URL(source, `${siteUrl}/`).toString();
-}
-
-function getSocialImageUrl(slug: string, coverImageUrl: string) {
-  const fileVersion = new URL(coverImageUrl).pathname.split("/").pop() || coverImageUrl;
-  return `${siteUrl}/social-images/${encodeURIComponent(slug)}?v=${encodeURIComponent(fileVersion)}`;
-}
 
 const getArticle = cache(async (slug: string) => {
   noStore();
@@ -58,7 +44,7 @@ export async function generateMetadata({
   }
 
   const canonical = `${siteUrl}/articles/${data.slug}`;
-  const image = getPublicImageUrl(data.cover_image_url);
+  const image = getArticleImage(data);
   const socialImage = getSocialImageUrl(data.slug, image);
   const description =
     data.excerpt?.trim() ||
@@ -129,7 +115,7 @@ export default async function ArticlePage({
     : "";
 
   const canonical = `${siteUrl}/articles/${data.slug}`;
-  const image = getPublicImageUrl(data.cover_image_url);
+  const image = getArticleImage(data);
 
   const jsonLd = {
     "@context": "https://schema.org",

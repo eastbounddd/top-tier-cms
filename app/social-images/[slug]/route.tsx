@@ -1,5 +1,6 @@
 import { ImageResponse } from "next/og";
 import { createClient } from "@/lib/supabase/server";
+import { getArticleImage } from "@/lib/articleSocialImage";
 
 export const dynamic = "force-dynamic";
 
@@ -11,13 +12,13 @@ export async function GET(
   const supabase = await createClient();
   const { data } = await supabase
     .from("articles")
-    .select("cover_image_url")
+    .select("cover_image_url,body")
     .eq("slug", slug)
     .eq("status", "published")
     .single();
 
-  if (!data?.cover_image_url) {
-    return new Response("Social image not found", { status: 404 });
+  if (!data) {
+    return new Response("Social image not found", { status: 404, headers: { "Cache-Control": "no-store" } });
   }
 
   return new ImageResponse(
@@ -31,7 +32,7 @@ export async function GET(
     >
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
-        src={data.cover_image_url}
+        src={getArticleImage(data)}
         alt=""
         width="1200"
         height="675"
@@ -42,7 +43,7 @@ export async function GET(
       width: 1200,
       height: 675,
       headers: {
-        "Cache-Control": "public, max-age=31536000, immutable",
+        "Cache-Control": "no-store",
       },
     }
   );

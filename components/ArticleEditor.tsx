@@ -730,15 +730,24 @@ const deleteArticle = async () => {
             disabled={busy}
             type="file"
             accept="image/png,image/jpeg,image/webp"
-            onChange={(e: ChangeEvent<HTMLInputElement>) =>
-              cover(e.target.files?.[0])
-            }
+            onChange={(e: ChangeEvent<HTMLInputElement>) => {
+              const input = e.currentTarget;
+              void cover(input.files?.[0]).finally(() => { input.value = ""; });
+            }}
           />
           <span className="field-help">
             Recommended 1600 × 900. The complete image is shown in the CMS and on
             the article page.
           </span>
         </label>
+
+        {form.cover_image_url && (
+          <button type="button" disabled={busy} onClick={() =>
+            setForm((f) => ({ ...f, cover_image_url: "" }))
+          }>
+            Remove cover image
+          </button>
+        )}
 
         <label className="check">
           <input
