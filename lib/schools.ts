@@ -6,7 +6,6 @@ export const schools = [
   { name: "Michigan", slug: "michigan", xHandle: "toptieruofm" },
   { name: "Tulane", slug: "tulane", xHandle: "toptiertulane" },
   { name: "Georgia", slug: "georgia", xHandle: "toptieruga" },
-  { name: "Iowa State", slug: "iowa-state", xHandle: "toptiercyclones" },
   { name: "Baylor", slug: "baylor", xHandle: "toptierbaylor" },
   { name: "Vanderbilt", slug: "vanderbilt", xHandle: "toptiervandy" },
   { name: "Oklahoma", slug: "oklahoma", xHandle: "toptieroklahoma" },
