@@ -8,7 +8,9 @@ export const schools = [
   { name: "Georgia", slug: "georgia", xHandle: "toptieruga" },
   { name: "Baylor", slug: "baylor", xHandle: "toptierbaylor" },
   { name: "Vanderbilt", slug: "vanderbilt", xHandle: "toptiervandy" },
-  { name: "Oklahoma", slug: "oklahoma", xHandle: "toptieroklahoma" },
+  { name: "Oklahoma", slug: "oklahoma", xHandle: "TopTierOklahoma" },
+  { name: "Kansas", slug: "kansas", xHandle: "TopTierKansas" },
+  { name: "Virginia Tech", slug: "virginia-tech", xHandle: "TopTierHokies" },
   { name: "Alabama", slug: "alabama", xHandle: "toptieralabama" },
   { name: "BYU", slug: "byu", xHandle: "toptiercougs" },
   { name: "Clemson", slug: "clemson", xHandle: "TopTierCU" },
@@ -23,6 +25,7 @@ export const schools = [
 
 export const articleSchoolOptions = [
   ...schools.map(({ name, slug }) => ({ name, slug })),
+  { name: "Oklahoma State", slug: "oklahoma-state" },
   { name: "Recruiting", slug: "recruiting" },
 ] as const;
 
