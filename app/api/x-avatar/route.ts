@@ -3,6 +3,16 @@ import { NextRequest } from "next/server";
 export const runtime = "nodejs";
 export const revalidate = 21600;
 
+// Saved account photos keep the network and school previews available when X
+// blocks profile metadata or an external avatar resolver is unavailable.
+const savedProfilePhotos = new Set([
+  "toptierbeavers", "toptierkansas", "toptierg6", "toptierbig10",
+  "toptierdeacons", "toptierbadgers", "toptiernorthtex", "toptierhouston",
+  "toptiertrojans", "toptierunlv", "toptierutahst", "toptierspartans",
+  "toptierhawkeyes", "toptierunc", "toptierncstate", "toptieroregon",
+  "toptierkstate", "toptierillinois", "toptiercolorado", "toptierhuskers",
+]);
+
 function safeHandle(value: string | null) {
   return (value || "").replace(/[^a-zA-Z0-9_]/g, "").slice(0, 30);
 }
@@ -69,6 +79,12 @@ export async function GET(request: NextRequest) {
   const handle = safeHandle(request.nextUrl.searchParams.get("handle"));
   if (!handle) {
     return Response.redirect(new URL("/top-tier-logo.png", request.url));
+  }
+
+  if (savedProfilePhotos.has(handle.toLowerCase())) {
+    return Response.redirect(
+      new URL(`/x-avatars/${handle.toLowerCase()}.jpg`, request.url)
+    );
   }
 
   try {

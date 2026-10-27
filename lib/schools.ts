@@ -15,6 +15,8 @@ export const schools = [
   { name: "BYU", slug: "byu", xHandle: "toptiercougs" },
   { name: "Clemson", slug: "clemson", xHandle: "TopTierCU" },
   { name: "Nebraska", slug: "nebraska", xHandle: "TopTierHuskers" },
+  { name: "Oregon State", slug: "oregon-state", xHandle: "toptierbeavers" },
+  { name: "Illinois", slug: "illinois", xHandle: "toptierillinois" },
   { name: "Tennessee", slug: "tennessee", xHandle: "TopTierVols" },
   { name: "Kentucky", slug: "kentucky", xHandle: "toptierbbn" },
   { name: "Missouri", slug: "missouri", xHandle: "TopTierMizzou" },
