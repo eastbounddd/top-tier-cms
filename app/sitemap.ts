@@ -14,7 +14,8 @@ export const revalidate = 0;
 type SitemapArticle = {
   slug: string;
   published_at: string | null;
-  updated_at: string | null;
+  content_updated_at?: string | null;
+  school?: string | null;
 };
 
 async function getPublishedArticles() {
@@ -32,7 +33,7 @@ async function getPublishedArticles() {
   for (let from = 0; ; from += pageSize) {
     const { data, error } = await supabase
       .from("articles")
-      .select("slug,published_at,updated_at")
+      .select("*")
       .eq("status", "published")
       .not("slug", "is", null)
       .order("published_at", { ascending: false })
@@ -56,31 +57,38 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const db = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!);
   const { data: writers } = await db.from("writer_profiles").select("slug");
 
+  const latest = articles.map(a => a.content_updated_at || a.published_at).filter((date): date is string => Boolean(date)).sort().at(-1);
   const publicPages: MetadataRoute.Sitemap = [
     {
       url: siteUrl,
+      lastModified: latest,
       changeFrequency: "daily",
       priority: 1,
     },
     {
       url: `${siteUrl}/schools`,
+      lastModified: latest,
       changeFrequency: "daily",
       priority: 0.8,
     },
     {
       url: `${siteUrl}/articles`,
+      lastModified: latest,
       changeFrequency: "daily",
       priority: 0.9,
     },
     {
       url: `${siteUrl}/recruiting`,
+      lastModified: articles.filter(a => a.school === "Recruiting").map(a => a.content_updated_at || a.published_at).filter((date): date is string => Boolean(date)).sort().at(-1),
       changeFrequency: "daily",
       priority: 0.8,
     },
+    { url: `${siteUrl}/newsletter`, changeFrequency: "weekly", priority: 0.6 },
     { url: `${siteUrl}/writers`, changeFrequency: "weekly", priority: 0.7 },
     ...(writers || []).map(writer => ({ url: `${siteUrl}/author/${encodeURIComponent(writer.slug)}`, changeFrequency: "weekly" as const, priority: 0.7 })),
     ...schools.map((school) => ({
       url: `${siteUrl}/schools/${school.slug}`,
+      lastModified: articles.filter(a => a.school === school.name).map(a => a.content_updated_at || a.published_at).filter((date): date is string => Boolean(date)).sort().at(-1),
       changeFrequency: "daily" as const,
       priority: 0.7,
     })),
@@ -88,7 +96,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
   const articlePages: MetadataRoute.Sitemap = articles.map((article) => ({
     url: `${siteUrl}/articles/${encodeURIComponent(article.slug)}`,
-    lastModified: article.updated_at || article.published_at || undefined,
+    lastModified: article.content_updated_at || article.published_at || undefined,
     changeFrequency: "weekly",
     priority: 0.8,
   }));

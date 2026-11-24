@@ -28,6 +28,7 @@ type FormState = {
   school: string;
   cover_image_url: string;
   is_top_story: boolean;
+  is_sponsored: boolean;
   status: string;
 };
 
@@ -52,6 +53,7 @@ export function ArticleEditor() {
     school: "",
     cover_image_url: "",
     is_top_story: false,
+    is_sponsored: false,
     status: "draft",
   });
   const [editorHtml, setEditorHtml] = useState("");
@@ -99,6 +101,7 @@ export function ArticleEditor() {
           school: data.school || "",
           cover_image_url: data.cover_image_url || "",
           is_top_story: Boolean(data.is_top_story),
+          is_sponsored: Boolean(data.is_sponsored),
           status: data.status || "draft",
         });
 
@@ -208,6 +211,21 @@ export function ArticleEditor() {
     return data.publicUrl;
   };
 
+  const compressCover = async (file: File): Promise<File> => {
+    const bitmap = await createImageBitmap(file);
+    try {
+      const scale = Math.min(1, 1600 / bitmap.width);
+      const canvas = document.createElement("canvas");
+      canvas.width = Math.max(1, Math.round(bitmap.width * scale));
+      canvas.height = Math.max(1, Math.round(bitmap.height * scale));
+      const context = canvas.getContext("2d");
+      if (!context) return file;
+      context.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+      const blob = await new Promise<Blob | null>(resolve => canvas.toBlob(resolve, "image/webp", 0.82));
+      return blob?.type === "image/webp" ? new File([blob], file.name.replace(/\.[^.]+$/, "") + ".webp", { type: "image/webp" }) : file;
+    } finally { bitmap.close(); }
+  };
+
   const cover = async (file?: File) => {
     if (!file) return;
     setBusy(true);
@@ -215,7 +233,9 @@ export function ArticleEditor() {
     setMessage("");
 
     try {
-      const url = await upload(file, "article-images");
+      let prepared = file;
+      try { prepared = await compressCover(file); } catch { /* Keep the original if the browser cannot decode it. */ }
+      const url = await upload(prepared, "article-images");
       setForm((f) => ({ ...f, cover_image_url: url }));
       setMessage("Cover image uploaded. It will be saved with the article.");
     } catch (e: any) {
@@ -574,6 +594,12 @@ const deleteArticle = async () => {
       return;
     }
 
+    const articleSlug = form.slug || slugify(form.title);
+    if (status === "published" && (articleSlug.length < 8 || !/^[a-z0-9]+(?:-[a-z0-9]+)+$/.test(articleSlug))) {
+      setMessage("Use a descriptive URL slug of at least 8 characters with hyphen-separated words.");
+      return;
+    }
+
     if (!authorName.trim()) {
       setMessage("Please enter the author name.");
       return;
@@ -595,7 +621,7 @@ const deleteArticle = async () => {
 
     const payload: any = {
       ...form,
-      slug: form.slug || slugify(form.title),
+      slug: articleSlug,
       status,
       author_id: user.id,
       writer_profile_id: writerId || null,
@@ -607,7 +633,7 @@ const deleteArticle = async () => {
       },
     };
 
-    if (status === "published") {
+    if (status === "published" && form.status !== "published") {
       payload.published_at = new Date().toISOString();
     }
 
@@ -771,6 +797,8 @@ const deleteArticle = async () => {
           />
           Feature in Top Stories
         </label>
+
+        <label className="check"><input type="checkbox" checked={form.is_sponsored} onChange={e => setForm(f => ({...f, is_sponsored:e.target.checked}))} /> Sponsored content</label>
 
         <div className="toolbar" aria-label="Article formatting toolbar">
           <button type="button" onClick={() => command("bold")}>
