@@ -11,7 +11,7 @@ import { Footer } from "@/components/Footer";
 import { RenderedArticleContent } from "@/components/RenderedArticleContent";
 import { ArticleShare } from "@/components/ArticleShare";
 import { NewsletterSignup } from "@/components/NewsletterSignup";
-import { getArticleImage, getSocialImageUrl, siteUrl } from "@/lib/articleSocialImage";
+import { getArticleImage, getSocialImageUrl, getXShareArticleUrl, siteUrl } from "@/lib/articleSocialImage";
 
 // Published article metadata must reflect edits immediately, especially when
 // a cover image is replaced after X has previously crawled the article URL.
@@ -160,6 +160,7 @@ export default async function ArticlePage({
           <ArticleShare
             title={data.title}
             url={canonical}
+            xUrl={getXShareArticleUrl(data.slug, image)}
           />
         </div>
 

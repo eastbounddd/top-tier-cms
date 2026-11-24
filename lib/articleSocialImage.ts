@@ -27,3 +27,10 @@ export function getSocialImageUrl(slug: string, image: string) {
   const version = createHash("sha256").update(image).digest("hex").slice(0, 20);
   return `${siteUrl}/social-images/${encodeURIComponent(slug)}?v=3-${version}`;
 }
+
+export function getXShareArticleUrl(slug: string, image: string) {
+  const version = new URL(getSocialImageUrl(slug, image)).searchParams.get("v")!;
+  const url = new URL(`/articles/${encodeURIComponent(slug)}`, siteUrl);
+  url.searchParams.set("x_preview", version);
+  return url.toString();
+}

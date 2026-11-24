@@ -6,11 +6,12 @@ import { useState } from "react";
 type ArticleShareProps = {
   title: string;
   url: string;
+  xUrl: string;
 };
 
-export function ArticleShare({ title, url }: ArticleShareProps) {
+export function ArticleShare({ title, url, xUrl }: ArticleShareProps) {
   const [copied, setCopied] = useState(false);
-  const xShareUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(title)}&url=${encodeURIComponent(url)}`;
+  const xShareUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(title)}&url=${encodeURIComponent(xUrl)}`;
   const facebookShareUrl = `https://www.facebook.com/sharer.php?u=${encodeURIComponent(url)}`;
   const facebookMobileShareUrl = `https://m.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`;
 

@@ -19,6 +19,8 @@ test('replacing or removing an image updates the preview source and its version'
   const first = images.getArticleImage({ cover_image_url: 'https://example.com/a/photo.jpg' });
   const replacement = images.getArticleImage({ cover_image_url: 'https://example.com/b/photo.jpg' });
   assert.notEqual(images.getSocialImageUrl('story', first), images.getSocialImageUrl('story', replacement));
+  assert.notEqual(images.getXShareArticleUrl('story', first), images.getXShareArticleUrl('story', replacement));
+  assert.equal(new URL(images.getXShareArticleUrl('story', first)).pathname, '/articles/story');
   assert.notEqual(images.getSocialImageUrl('story', replacement), images.getSocialImageUrl('story', replacement + '?v=2'));
   const body = { html: '<p>New photo</p><img src="https://example.com/new.jpg?a=1&amp;b=2">' };
   assert.equal(images.getArticleImage({ cover_image_url: '', body }), 'https://example.com/new.jpg?a=1&b=2');
