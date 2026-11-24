@@ -261,7 +261,7 @@ export function NetworkCarousel() {
               href={`https://x.com/${handle}`}
               target="_blank"
               rel="noreferrer"
-              aria-label={`${name} on X`}
+              aria-label={`${name} @${handle} on X`}
             >
               <img
                 src={`/api/x-avatar?handle=${encodeURIComponent(handle)}`}

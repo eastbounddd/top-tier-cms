@@ -1,9 +1,11 @@
+import { breadcrumbSchema, schemaJson } from "@/lib/structuredData";
 import Link from "next/link";
+import Image from "next/image";
 import { attachWriters } from "@/lib/writers";
 import { WriterCard } from "@/components/WriterCard";
 import type { Metadata } from "next";
 import { unstable_noStore as noStore } from "next/cache";
-import { notFound } from "next/navigation";
+import { notFound, permanentRedirect } from "next/navigation";
 import { cache } from "react";
 import { createClient } from "@/lib/supabase/server";
 import { Header } from "@/components/Header";
@@ -51,7 +53,7 @@ export async function generateMetadata({
   const image = getArticleImage(data);
   const socialImage = getSocialImageUrl(data.slug, image);
   const description =
-    data.excerpt?.trim() ||
+    data.excerpt?.replace(/[#\p{Extended_Pictographic}]/gu, "").replace(/\s+/g, " ").trim().slice(0,160) ||
     "Read the latest college football news, analysis and original reporting from Top Tier.";
 
   return {
@@ -84,6 +86,7 @@ export async function generateMetadata({
     },
     twitter: {
       card: "summary_large_image",
+      site: "@TopTierStateX",
       title: data.title,
       description,
       images: [{ url: socialImage, secureUrl: socialImage, alt: data.title }],
@@ -97,6 +100,7 @@ export default async function ArticlePage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
+  if (slug === "n" && await getArticle("no-such-thing-as-a-morale-victory-unless")) permanentRedirect("/articles/no-such-thing-as-a-morale-victory-unless");
   const data = await getArticle(slug);
 
   if (!data) notFound();
@@ -129,14 +133,17 @@ export default async function ArticlePage({
     description: data.excerpt || undefined,
     image: [image],
     datePublished: data.published_at || undefined,
-    dateModified: data.updated_at || data.published_at || undefined,
-    author: [{ "@type": "Person", name: author, ...(writer ? { url: `${siteUrl}/author/${writer.slug}` } : {}) }],
+    dateModified: data.content_updated_at || data.published_at || undefined,
+    author: [{ "@type": /^@?tops*tier/i.test(author) ? "Organization" : "Person", name: author, ...(writer ? { url: `${siteUrl}/author/${writer.slug}` } : {}) }],
     publisher: {
       "@type": "Organization",
       name: "Top Tier",
+      url: siteUrl,
+      sameAs: ["https://x.com/TopTierStateX"],
       logo: {
         "@type": "ImageObject",
-        url: `${siteUrl}/top-tier-logo.png`,
+        url: `${siteUrl}/top-tier-logo-optimized.webp`,
+        width: 384, height: 384,
       },
     },
     mainEntityOfPage: canonical,
@@ -146,8 +153,9 @@ export default async function ArticlePage({
     <>
       <Header />
 
-      <main className="article-page shell">
-        <div className="article-kicker">{data.category}</div>
+      <main id="main-content" className="article-page shell">
+        <div className="article-kicker">{data.is_sponsored ? "Sponsored" : data.category}</div>
+        {data.is_sponsored && <p className="sponsored-disclosure">This article is sponsored content.</p>}
         <h1>{data.title}</h1>
 
         {data.excerpt && <p className="article-deck">{data.excerpt}</p>}
@@ -156,7 +164,7 @@ export default async function ArticlePage({
           <div className="byline">
             By <strong>{writer ? <Link className="writer-link" href={`/author/${writer.slug}`}>{author}</Link> : author}</strong>
           </div>
-          {published && <div className="article-date">{published}</div>}
+          {published && <time className="article-date" dateTime={data.published_at}>{published}</time>}
           <ArticleShare
             title={data.title}
             url={canonical}
@@ -166,15 +174,16 @@ export default async function ArticlePage({
 
         {data.cover_image_url && (
           <div className="article-cover-frame">
-            <div
-              className="article-cover-blur"
-              style={{ backgroundImage: `url("${data.cover_image_url}")` }}
-            />
-            <img
+
+            <Image
+              width={1600}
+              height={900}
+              sizes="(max-width: 1040px) 100vw, 1040px"
+              unoptimized={!/^https:\/\/(?:[^/]+\.)?supabase\.co\//i.test(data.cover_image_url) && !data.cover_image_url.startsWith("/")}
               className="cover"
               src={data.cover_image_url}
               alt={data.title}
-              fetchPriority="high"
+              priority
             />
           </div>
         )}
@@ -188,7 +197,7 @@ export default async function ArticlePage({
 
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        dangerouslySetInnerHTML={{ __html: schemaJson([jsonLd, breadcrumbSchema([{name:"Articles",path:"/articles"},{name:data.title,path:`/articles/${data.slug}`}])]) }}
       />
     </>
   );

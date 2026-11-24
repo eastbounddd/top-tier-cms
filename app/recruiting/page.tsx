@@ -1,3 +1,4 @@
+import { pageMetadata } from "@/lib/pageMetadata";
 import { attachWriters } from "@/lib/writers";
 import type { Metadata } from "next";
 import { ArticleCard } from "@/components/ArticleCard";
@@ -5,11 +6,7 @@ import { Footer } from "@/components/Footer";
 import { Header } from "@/components/Header";
 import { createClient } from "@/lib/supabase/server";
 
-export const metadata: Metadata = {
-  title: "Recruiting",
-  description: "The latest college football recruiting news, analysis, and original reporting from Top Tier.",
-  alternates: { canonical: "/recruiting" },
-};
+export const metadata: Metadata = pageMetadata("Recruiting", "The latest college football recruiting news, analysis, and original reporting from Top Tier.", "/recruiting");
 
 export default async function RecruitingPage() {
   const supabase = await createClient();
@@ -23,7 +20,7 @@ export default async function RecruitingPage() {
   const articles = await attachWriters(supabase, rows ?? []);
   return <>
     <Header />
-    <main className="school-page shell">
+    <main id="main-content" className="school-page shell">
       <div className="schools-heading">
         <small>TOP TIER RECRUITING COVERAGE</small>
         <h1>Recruiting</h1>

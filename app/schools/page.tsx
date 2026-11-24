@@ -1,18 +1,16 @@
+import { pageMetadata } from "@/lib/pageMetadata";
 import Link from "next/link";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { schools } from "@/lib/schools";
 import { XAccountLink } from "@/components/XAccountLink";
 
-export const metadata = {
-  title: "Schools",
-  description: "Find Top Tier reporting and articles for every school we cover.",
-};
+export const metadata = pageMetadata("College Football Schools", "Explore college football news, analysis and original reporting from the schools covered by Top Tier.", "/schools");
 
 export default function SchoolsPage() {
   return <>
     <Header />
-    <main className="schools-page shell">
+    <main id="main-content" className="schools-page shell">
       <div className="schools-heading">
         <small>TOP TIER TEAM COVERAGE</small>
         <h1>Schools</h1>

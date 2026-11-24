@@ -1,3 +1,6 @@
+import { HeroVideo } from "@/components/HeroVideo";
+import { pageMetadata } from "@/lib/pageMetadata";
+export const metadata = pageMetadata("College Football News", "Independent college football news, analysis, recruiting updates and original reporting from Top Tier.", "/");
 import { createClient } from "@/lib/supabase/server";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
@@ -37,13 +40,16 @@ export default async function Home() {
     articles = await attachWriters(supabase, articles);
     recruitingArticles = await attachWriters(supabase, recruitingArticles);
   } catch {}
-  const top = articles.filter(a => a.is_top_story).concat(articles.filter(a => !a.is_top_story)).slice(0,5);
-  const college = articles.filter(a => a.category !== "Other News").slice(0,8);
-  const latestArticles = articles.slice(0,4);
-  const other = articles.filter(a => a.category === "Other News").slice(0,4);
-  const schoolArticles = articles.filter(a => a.school).slice(0,8);
-  return <><Header/><main>
-    <section className="hero"><iframe src="https://www.youtube.com/embed/-6bsfeicV9E?autoplay=1&mute=1&controls=0&loop=1&playlist=-6bsfeicV9E&modestbranding=1&rel=0&playsinline=1" title="Top Tier video" allow="autoplay; encrypted-media"/><div className="hero-shade"/><div className="shell hero-content"><small>COLLEGE FOOTBALL, ALL DAY</small><h1>STAY ON TOP OF<br/><em>COLLEGE FOOTBALL NEWS</em></h1><a href="#top-stories" className="red-button">Explore Top Stories →</a></div></section>
+  const used = new Set<string>();
+  const take = (candidates: any[], limit: number) => candidates.filter(a => { return !used.has(a.id); }).slice(0, limit).map(a => { used.add(a.id); return a; });
+  const top = take(articles.filter(a => a.is_top_story).concat(articles.filter(a => !a.is_top_story)), 5);
+  const college = take(articles.filter(a => a.category !== "Other News"), 8);
+  const latestArticles = take(articles, 4);
+  const other = take(articles.filter(a => a.category === "Other News"), 4);
+  const schoolArticles = take(articles.filter(a => a.school && a.school !== "Recruiting"), 8);
+  recruitingArticles = take(recruitingArticles, 8);
+  return <><Header/><main id="main-content">
+    <section className="hero"><HeroVideo/><div className="hero-shade"/><div className="shell hero-content"><small>COLLEGE FOOTBALL, ALL DAY</small><h1>STAY ON TOP OF<br/><em>COLLEGE FOOTBALL NEWS</em></h1><a href="#top-stories" className="red-button">Explore Top Stories →</a></div></section>
     <NetworkCarousel/><UpcomingGames/>
     <section id="top-stories" className="shell content-section"><div className="section-row"><div><small>RIGHT NOW</small><h2>Top Stories</h2></div></div>{top.length?<div className="top-grid">{top.map((a,i) => <ArticleCard key={a.id} article={a} featured={i===0}/>)}</div>:<p className="muted">No stories have been published yet.</p>}</section>
     <div className="shell"><NewsletterSignup variant="featured" /></div>

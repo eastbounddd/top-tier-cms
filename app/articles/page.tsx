@@ -1,3 +1,4 @@
+import { pageMetadata } from "@/lib/pageMetadata";
 import { attachWriters } from "@/lib/writers";
 import type { Metadata } from "next";
 import { AllArticlesGrid } from "@/components/AllArticlesGrid";
@@ -8,11 +9,7 @@ import { createClient } from "@/lib/supabase/server";
 
 const PAGE_SIZE = 12;
 
-export const metadata: Metadata = {
-  title: { absolute: "All Articles | Top Tier State" },
-  description: "Browse the latest college sports news, recruiting coverage, features and stories from Top Tier State.",
-  alternates: { canonical: "/articles" },
-};
+export const metadata: Metadata = pageMetadata("All Articles", "Browse the latest college sports news, recruiting coverage, features and stories from Top Tier.", "/articles");
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -30,7 +27,7 @@ export default async function AllArticlesPage() {
 
   return <>
     <Header />
-    <main className="schools-page shell articles-index">
+    <main id="main-content" className="schools-page shell articles-index">
       <div className="schools-heading">
         <small>LATEST FROM TOP TIER</small>
         <h1>All Articles</h1>

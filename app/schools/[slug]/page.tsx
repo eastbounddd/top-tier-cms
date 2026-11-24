@@ -1,3 +1,5 @@
+import { breadcrumbSchema, schemaJson } from "@/lib/structuredData";
+import { pageMetadata } from "@/lib/pageMetadata";
 import { attachWriters } from "@/lib/writers";
 import { notFound } from "next/navigation";
 import { Header } from "@/components/Header";
@@ -6,6 +8,8 @@ import { ArticleCard } from "@/components/ArticleCard";
 import { createClient } from "@/lib/supabase/server";
 import { getSchoolBySlug, schools } from "@/lib/schools";
 import { XAccountLink } from "@/components/XAccountLink";
+
+export async function generateMetadata({ params }: { params: Promise<{slug:string}> }) { const school = getSchoolBySlug((await params).slug); return school ? pageMetadata(`${school.name} Football News, Analysis & Reporting`, `Follow the latest ${school.name} football news, analysis and original reporting from Top Tier, with updates from across college sports.`, `/schools/${school.slug}`) : {}; }
 
 export const generateStaticParams = () => schools.map(({ slug }) => ({ slug }));
 
@@ -25,7 +29,7 @@ export default async function SchoolPage({ params }: { params: Promise<{ slug: s
   const articles = await attachWriters(supabase, rows ?? []);
   return <>
     <Header />
-    <main className="school-page shell">
+    <main id="main-content" className="school-page shell">
       <div className="schools-heading">
         <img
           className="school-page-logo"
@@ -47,6 +51,6 @@ export default async function SchoolPage({ params }: { params: Promise<{ slug: s
         <div className="school-empty">No {school.name} articles have been published yet.</div>
       )}
     </main>
-    <Footer />
+    <Footer /><script type="application/ld+json" dangerouslySetInnerHTML={{__html:schemaJson(breadcrumbSchema([{name:"Schools",path:"/schools"},{name:school.name,path:`/schools/${school.slug}`}]))}} />
   </>;
 }
