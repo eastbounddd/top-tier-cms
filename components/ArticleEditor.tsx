@@ -31,6 +31,8 @@ type FormState = {
   status: string;
 };
 
+const articleUnavailable = "Article not found or you don't have permission to save it.";
+
 export function ArticleEditor() {
   const params = useSearchParams();
   const id = params.get("id");
@@ -63,6 +65,7 @@ export function ArticleEditor() {
   const [busy, setBusy] = useState(false);
   const [uploading, setUploading] = useState("");
   const [message, setMessage] = useState("");
+  const [loadedArticleId, setLoadedArticleId] = useState<string | null>(null);
   const [coverPreview, setCoverPreview] = useState("");
   const [coverUpscaled, setCoverUpscaled] = useState(false);
 
@@ -81,18 +84,23 @@ export function ArticleEditor() {
   useEffect(() => {
     if (!id) return;
     const supabase = createClient();
+    let active = true;
 
     supabase
       .from("articles")
       .select("*")
       .eq("id", id)
-      .single()
+      .maybeSingle()
       .then(({ data, error }) => {
+        if (!active) return;
         if (error) {
           setMessage(error.message);
           return;
         }
-        if (!data) return;
+        if (!data) {
+          setMessage(articleUnavailable);
+          return;
+        }
 
         setForm({
           title: data.title || "",
@@ -117,7 +125,7 @@ export function ArticleEditor() {
         );
         setEditorHtml(html);
         requestAnimationFrame(() => {
-          if (editor.current) {
+          if (active && editor.current) {
             const rendered = document.createElement("div");
             rendered.innerHTML = renderStandaloneXLinks(html);
             rendered.querySelectorAll<HTMLElement>(".x-post-embed").forEach((post) => {
@@ -125,9 +133,11 @@ export function ArticleEditor() {
               if (url) post.outerHTML = createEditorXPreview(url);
             });
             editor.current.innerHTML = rendered.innerHTML;
+            setLoadedArticleId(id);
           }
         });
       });
+    return () => { active = false; };
   }, [id]);
 
   useEffect(() => {
@@ -585,6 +595,10 @@ const deleteArticle = async () => {
   router.refresh();
 };
   const save = async (status: string) => {
+    if (id && loadedArticleId !== id) {
+      setMessage(articleUnavailable);
+      return;
+    }
     if (!form.title.trim()) {
       setMessage("Please enter a headline first.");
       return;
@@ -620,7 +634,6 @@ const deleteArticle = async () => {
         cover_image_url: form.cover_image_url,
         is_top_story: form.is_top_story,
         status,
-        author_id: user.id,
         writer_profile_id: writerId || null,
         body: {
           html: serializeEditorHtml()
@@ -646,10 +659,14 @@ const deleteArticle = async () => {
       }
 
       const article = schemaError ? payload : { ...payload, is_sponsored: isSponsored };
-      const { error } = id
-        ? await articles.update(article).eq("id", id).select("id").single()
-        : await articles.insert(article);
-      if (error) throw new Error(error.message);
+      if (id) {
+        const { data, error } = await articles.update(article).eq("id", id).select("id").maybeSingle();
+        if (error) throw new Error(error.message);
+        if (!data) throw new Error(articleUnavailable);
+      } else {
+        const { error } = await articles.insert({ ...article, author_id: user.id });
+        if (error) throw new Error(error.message);
+      }
 
       router.push("/dashboard");
       router.refresh();
