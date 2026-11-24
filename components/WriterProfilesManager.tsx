@@ -67,6 +67,24 @@ export function WriterProfilesManager({ writers }: { writers: Writer[] }) {
     setPhoto(file);
   }
 
+  async function deleteProfile(writer: Writer) {
+    if (!window.confirm(`Delete ${writer.name}'s public profile? Their articles will remain, but their profile links will be removed. This cannot be undone.`)) return;
+    setBusy(true);
+    setMessage("");
+    try {
+      const { data, error } = await createClient().from("writer_profiles").delete().eq("id", writer.id).select("id");
+      if (error) throw new Error(error.message);
+      if (!data?.length) throw new Error("The profile could not be deleted. Check your permissions and try again.");
+      setItems(current => current.filter(item => item.id !== writer.id));
+      if (form.id === writer.id) { setForm(blank); setPhoto(null); }
+      setMessage(`${writer.name}'s public profile was deleted.`);
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Could not delete the profile. Please try again.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
   return <><form className="panel writer-form" onSubmit={save}><h2>{form.id ? "Edit public writer profile" : "Create public writer profile"}</h2>
     <label>Name<input required disabled={busy} value={form.name} onChange={e => change("name", e.target.value)} /></label>
     <label>URL slug<input required disabled={busy} pattern="[a-z0-9]+(-[a-z0-9]+)*" value={form.slug} onChange={e => change("slug", e.target.value)} placeholder="jane-smith" /></label>
@@ -79,6 +97,6 @@ export function WriterProfilesManager({ writers }: { writers: Writer[] }) {
     <label>Bio (separate paragraphs with a blank line)<textarea disabled={busy} rows={6} value={form.bio} onChange={e => change("bio", e.target.value)} /></label>
     <button className="red-button" disabled={busy}>{busy ? "Saving…" : "Save profile"}</button>
     {form.id && <button type="button" disabled={busy} onClick={() => { setForm(blank); setPhoto(null); setMessage(""); }}>Cancel editing</button>}
-    {message && <p role="status">{message}</p>}</form>
-    <div className="panel"><h2>Public profiles</h2>{items.map(w => <div className="writer-row" key={w.id}><div><b>{w.name}</b><span>/author/{w.slug}</span></div><button type="button" disabled={busy} onClick={() => { setPhoto(null); setMessage(""); setForm({ id: w.id, slug: w.slug, name: w.name, profile_image: w.profile_image || "", coverage: (w.coverage || []).join(", "), x_handle: w.x_handle || "", bio: w.bio || "", title: w.title || "", joined_date: w.joined_date || "" }); }}>Edit</button></div>)}</div></>;
+    </form>
+    <div className="panel"><h2>Public profiles</h2>{message && <p role="status">{message}</p>}{items.map(w => <div className="writer-row" key={w.id}><div><b>{w.name}</b><span>/author/{w.slug}</span></div><div className="writer-row-actions"><button type="button" disabled={busy} onClick={() => { setPhoto(null); setMessage(""); setForm({ id: w.id, slug: w.slug, name: w.name, profile_image: w.profile_image || "", coverage: (w.coverage || []).join(", "), x_handle: w.x_handle || "", bio: w.bio || "", title: w.title || "", joined_date: w.joined_date || "" }); }}>Edit</button><button type="button" className="delete-button" disabled={busy} aria-label={`Delete ${w.name}'s profile`} onClick={() => void deleteProfile(w)}>Delete</button></div></div>)}</div></>;
 }
