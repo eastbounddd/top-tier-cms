@@ -1,10 +1,10 @@
-export function XAccountLink({ handle }: { handle: string }) {
+export function XAccountLink({ handle, className = "school-x-link" }: { handle: string; className?: string }) {
   return (
     <a
-      className="school-x-link"
+      className={className}
       href={`https://x.com/${handle}`}
       target="_blank"
-      rel="noreferrer"
+      rel="noopener noreferrer"
       aria-label={`@${handle} on X`}
     >
       <svg viewBox="0 0 24 24" aria-hidden="true">
