@@ -42,7 +42,7 @@ export function NewsletterSignup({ variant = "featured" }: {
   return <section className={`${styles.newsletter} ${styles[variant]}`} aria-labelledby={`${id}-title`}>
     <div className={styles.copy}>
       <small className={styles.eyebrow}>TOP TIER NEWSLETTER</small>
-      <h2 id={`${id}-title`} className={styles.title}>Stay On Top of College Football.</h2>
+      <h2 id={`${id}-title`} className={styles.title}>Stay On Top of College Sports.</h2>
       {variant !== "footer" && <p className={styles.description}>Breaking news, recruiting updates, transfer portal news, scores and the biggest stories delivered directly to your inbox.</p>}
     </div>
     <form action={MAILCHIMP_ACTION} method="post" target="_blank" rel="noopener noreferrer" onSubmit={submit} className={styles.form} aria-busy={submitting}>
