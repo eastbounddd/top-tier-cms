@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useId, useRef, useState, type FormEvent } from "react";
 import { MAILCHIMP_ACTION, MAILCHIMP_HONEYPOT, type NewsletterResult } from "@/lib/newsletter";
 import styles from "./NewsletterSignup.module.css";
@@ -53,7 +54,7 @@ export function NewsletterSignup({ variant = "featured" }: {
       <div className={styles.hidden} aria-hidden="true">
         <input type="text" name={MAILCHIMP_HONEYPOT} tabIndex={-1} defaultValue="" autoComplete="off" aria-label="Leave this field empty" />
       </div>
-      <p id={`${id}-note`} className={styles.note}>Free. No spam. Unsubscribe anytime.</p>
+      <p id={`${id}-note`} className={styles.note}>Free. No spam. Unsubscribe anytime. By subscribing you agree to our <Link href="/privacy">Privacy Policy</Link>.</p>
       <div id={`${id}-status`} role="status" aria-live="polite" aria-atomic="true" className={`${styles.status} ${result?.status === "error" ? styles.error : ""}`}>
         {submitting ? "Submitting your signup…" : result?.message}
       </div>
