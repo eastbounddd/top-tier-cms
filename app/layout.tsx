@@ -1,8 +1,12 @@
+import localFont from "next/font/local";
 import { schemaJson } from "@/lib/structuredData";
 import type { Metadata } from "next";
 import Script from "next/script";
 import "./globals.css";
 import "./social-polish.css";
+
+const barlow = localFont({src:[{path:"./fonts/barlow-500.woff2",weight:"500"},{path:"./fonts/barlow-600.woff2",weight:"600"},{path:"./fonts/barlow-700.woff2",weight:"700"},{path:"./fonts/barlow-800.woff2",weight:"800"},{path:"./fonts/barlow-900.woff2",weight:"900"}],variable:"--font-barlow",display:"swap"});
+const inter = localFont({src:[{path:"./fonts/inter-400.woff2",weight:"400"},{path:"./fonts/inter-500.woff2",weight:"500"},{path:"./fonts/inter-600.woff2",weight:"600"},{path:"./fonts/inter-700.woff2",weight:"700"}],variable:"--font-inter",display:"swap"});
 
 export const metadata: Metadata = {
   metadataBase: new URL(
@@ -15,7 +19,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="en">
+    <html lang="en" className={`${barlow.variable} ${inter.variable}`}>
       <head>
         <Script
           strategy="lazyOnload"

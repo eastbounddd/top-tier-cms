@@ -1,7 +1,7 @@
 .newsletter{box-sizing:border-box;display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,1fr);align-items:center;gap:40px;padding:40px;background:var(--bg2);color:var(--text);border:1px solid var(--line);border-top:4px solid var(--red)}
 .featured{margin-bottom:70px}
-.eyebrow{font:800 14px 'Barlow Condensed',Arial,sans-serif;color:#ef4256;letter-spacing:1.5px}
-.title{font:800 clamp(32px,3.5vw,48px)/1.05 'Barlow Condensed',Arial,sans-serif;text-transform:uppercase;margin:10px 0 14px}
+.eyebrow{font:800 14px var(--font-barlow),Arial,sans-serif;color:#ef4256;letter-spacing:1.5px}
+.title{font:800 clamp(32px,3.5vw,48px)/1.05 var(--font-barlow),Arial,sans-serif;text-transform:uppercase;margin:10px 0 14px}
 .description{color:#bdc2cb;font-size:14px;line-height:1.7;margin:0;max-width:560px}
 .form,.copy{min-width:0}
 .controls{display:flex;gap:10px}
