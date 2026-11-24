@@ -56,6 +56,9 @@ export function ArticleEditor() {
   });
   const [editorHtml, setEditorHtml] = useState("");
   const [authorName, setAuthorName] = useState("");
+  const [writerId, setWriterId] = useState("");
+  const [writers, setWriters] = useState<{id:string;name:string}[]>([]);
+  useEffect(() => { createClient().from("writer_profiles").select("id,name").order("name").then(({data}) => setWriters(data || [])); }, []);
   const [busy, setBusy] = useState(false);
   const [uploading, setUploading] = useState("");
   const [message, setMessage] = useState("");
@@ -104,6 +107,7 @@ export function ArticleEditor() {
             ? data.body.html
             : String(data.body || "");
 
+        setWriterId(data.writer_profile_id || "");
         setAuthorName(
           typeof data.body === "object" ? data.body?.author_name || "" : ""
         );
@@ -594,6 +598,7 @@ const deleteArticle = async () => {
       slug: form.slug || slugify(form.title),
       status,
       author_id: user.id,
+      writer_profile_id: writerId || null,
       body: {
         html: serializeEditorHtml()
           .replace(/<h1\b[^>]*>/gi, "")
@@ -714,6 +719,13 @@ const deleteArticle = async () => {
           />
         </label>
 
+        <label>
+          Writer profile
+          <select value={writerId} onChange={e => { const id = e.target.value; setWriterId(id); const writer = writers.find(w => w.id === id); if (writer) setAuthorName(writer.name); }}>
+            <option value="">No profile (byline shown as plain text)</option>
+            {writers.map(w => <option key={w.id} value={w.id}>{w.name}</option>)}
+          </select>
+        </label>
         <label>
           Author Name
           <input

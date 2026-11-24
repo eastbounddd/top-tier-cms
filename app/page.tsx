@@ -5,6 +5,7 @@ import { NetworkCarousel } from "@/components/NetworkCarousel";
 import { UpcomingGames } from "@/components/UpcomingGames";
 import { ArticleCard } from "@/components/ArticleCard";
 import Link from "next/link";
+import { attachWriters } from "@/lib/writers";
 import { NewsletterSignup } from "@/components/NewsletterSignup";
 
 export default async function Home() {
@@ -12,8 +13,8 @@ export default async function Home() {
   let recruitingArticles: any[] = [];
   try {
     const supabase = await createClient();
-    const currentFields = "id,title,slug,excerpt,cover_image_url,category,published_at,is_top_story,school";
-    const legacyFields = "id,title,slug,excerpt,cover_image_url,category,published_at,is_top_story";
+    const currentFields = "*";
+    const legacyFields = "*";
     const result = await supabase.from("articles").select(currentFields).eq("status","published").order("published_at",{ascending:false}).limit(24);
 
     // Continue showing published stories while the optional school migration
@@ -33,6 +34,8 @@ export default async function Home() {
         .limit(8);
       recruitingArticles = recruitingResult.data ?? [];
     }
+    articles = await attachWriters(supabase, articles);
+    recruitingArticles = await attachWriters(supabase, recruitingArticles);
   } catch {}
   const top = articles.filter(a => a.is_top_story).concat(articles.filter(a => !a.is_top_story)).slice(0,5);
   const college = articles.filter(a => a.category !== "Other News").slice(0,8);

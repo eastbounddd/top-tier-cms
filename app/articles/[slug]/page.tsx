@@ -1,3 +1,6 @@
+import Link from "next/link";
+import { attachWriters } from "@/lib/writers";
+import { WriterCard } from "@/components/WriterCard";
 import type { Metadata } from "next";
 import { unstable_noStore as noStore } from "next/cache";
 import { notFound } from "next/navigation";
@@ -25,7 +28,8 @@ const getArticle = cache(async (slug: string) => {
     .eq("status", "published")
     .single();
 
-  return data;
+  if (!data) return null;
+  return (await attachWriters(supabase, [data]))[0];
 });
 
 export async function generateMetadata({
@@ -102,7 +106,8 @@ export default async function ArticlePage({
       ? data.body.html
       : String(data.body ?? "");
 
-  const author =
+  const writer = data.writer;
+  const author = writer?.name ||
     (typeof data.body === "object" && data.body?.author_name) ||
     (data.profiles as any)?.display_name ||
     "Top Tier";
@@ -125,7 +130,7 @@ export default async function ArticlePage({
     image: [image],
     datePublished: data.published_at || undefined,
     dateModified: data.updated_at || data.published_at || undefined,
-    author: [{ "@type": "Person", name: author }],
+    author: [{ "@type": "Person", name: author, ...(writer ? { url: `${siteUrl}/author/${writer.slug}` } : {}) }],
     publisher: {
       "@type": "Organization",
       name: "Top Tier",
@@ -149,7 +154,7 @@ export default async function ArticlePage({
 
         <div className="article-info">
           <div className="byline">
-            By <strong>{author}</strong>
+            By <strong>{writer ? <Link className="writer-link" href={`/author/${writer.slug}`}>{author}</Link> : author}</strong>
           </div>
           {published && <div className="article-date">{published}</div>}
           <ArticleShare
@@ -174,6 +179,7 @@ export default async function ArticlePage({
         )}
 
         <RenderedArticleContent html={body} className="prose" />
+        {writer && <WriterCard writer={writer} />}
         <NewsletterSignup variant="article" />
       </main>
 

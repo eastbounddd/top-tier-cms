@@ -1,11 +1,12 @@
 "use client";
 
+import { attachWriters } from "@/lib/writers";
 import { useState } from "react";
 import { ArticleCard, type Article } from "@/components/ArticleCard";
 import { createClient } from "@/lib/supabase/client";
 
 const PAGE_SIZE = 12;
-const fields = "id,title,slug,excerpt,cover_image_url,category,school,published_at,is_top_story";
+const fields = "*";
 
 export function AllArticlesGrid({
   initialArticles,
@@ -38,7 +39,7 @@ export function AllArticlesGrid({
       return;
     }
 
-    const page = (data ?? []) as Article[];
+    const page = await attachWriters(supabase, (data ?? []) as Article[]);
     const nextArticles = page.slice(0, PAGE_SIZE);
     setArticles((current) => {
       const existing = new Set(current.map(({ id }) => id));

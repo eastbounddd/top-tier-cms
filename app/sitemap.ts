@@ -53,6 +53,8 @@ async function getPublishedArticles() {
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const articles = await getPublishedArticles();
+  const db = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!);
+  const { data: writers } = await db.from("writer_profiles").select("slug");
 
   const publicPages: MetadataRoute.Sitemap = [
     {
@@ -75,6 +77,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       changeFrequency: "daily",
       priority: 0.8,
     },
+    { url: `${siteUrl}/writers`, changeFrequency: "weekly", priority: 0.7 },
+    ...(writers || []).map(writer => ({ url: `${siteUrl}/author/${encodeURIComponent(writer.slug)}`, changeFrequency: "weekly" as const, priority: 0.7 })),
     ...schools.map((school) => ({
       url: `${siteUrl}/schools/${school.slug}`,
       changeFrequency: "daily" as const,

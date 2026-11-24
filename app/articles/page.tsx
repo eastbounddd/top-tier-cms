@@ -1,3 +1,4 @@
+import { attachWriters } from "@/lib/writers";
 import type { Metadata } from "next";
 import { AllArticlesGrid } from "@/components/AllArticlesGrid";
 import type { Article } from "@/components/ArticleCard";
@@ -20,12 +21,12 @@ export default async function AllArticlesPage() {
   const supabase = await createClient();
   const { data } = await supabase
     .from("articles")
-    .select("id,title,slug,excerpt,cover_image_url,category,school,published_at,is_top_story")
+    .select("*")
     .eq("status", "published")
     .order("published_at", { ascending: false })
     .range(0, PAGE_SIZE);
 
-  const page = (data ?? []) as Article[];
+  const page = await attachWriters(supabase, (data ?? []) as Article[]);
 
   return <>
     <Header />

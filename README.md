@@ -82,3 +82,8 @@ Use the Auth user you created for `partners@ttmediaco.net`. The migration promot
 - The ESPN feed is fetched by a Next.js server route to avoid browser CORS issues. It uses ESPN's unofficial site endpoint, so the route includes graceful error handling.
 - X profile images are loaded through `unavatar.io`. If a profile cannot be resolved, the Top Tier logo appears as a fallback. For guaranteed exact avatars, upload approved profile images into the project or use an official X API plan.
 - Standard Supabase uploads are most reliable for files under about 6 MB. The MP4 bucket allows larger files, but large production videos should later use resumable uploads.
+# Writer profiles
+
+Run `supabase/migrations/004_writer_profiles.sql` in the Supabase SQL editor before deploying this feature. It creates public writer profiles, links articles with an explicit byline where the match is unambiguous, and adds two labeled placeholder profiles. The migration does not change article login ownership. Run the unmatched report in the final SQL comment and review those articles in the editor.
+
+Owners and editors can open Dashboard → Manage Writers to create or edit a public profile. Enter a unique lowercase, hyphenated slug, name, photo URL or local path, coverage, X handle, title and biography. Select the profile in the article editor before publishing. Existing unmatched bylines remain plain text until assigned. The bio supports paragraphs separated by blank lines.

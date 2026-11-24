@@ -1,3 +1,4 @@
+import { attachWriters } from "@/lib/writers";
 import type { Metadata } from "next";
 import { ArticleCard } from "@/components/ArticleCard";
 import { Footer } from "@/components/Footer";
@@ -12,13 +13,14 @@ export const metadata: Metadata = {
 
 export default async function RecruitingPage() {
   const supabase = await createClient();
-  const { data: articles } = await supabase
+  const { data: rows } = await supabase
     .from("articles")
-    .select("id,title,slug,excerpt,cover_image_url,category,published_at,is_top_story,school")
+    .select("*")
     .eq("status", "published")
     .eq("school", "Recruiting")
     .order("published_at", { ascending: false });
 
+  const articles = await attachWriters(supabase, rows ?? []);
   return <>
     <Header />
     <main className="school-page shell">
