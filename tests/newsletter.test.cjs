@@ -13,60 +13,97 @@ function load(file, dependencies = {}) {
   );
   return module.exports;
 }
+
+const { createHash } = require('node:crypto');
 const newsletter = load('lib/newsletter.ts');
-const { POST } = load('app/api/newsletter/route.ts', { '@/lib/newsletter': newsletter });
-const request = (body, origin = 'http://localhost:3000') => new Request('http://localhost:3000/api/newsletter', {
-  method: 'POST', headers: { 'Content-Type': 'application/json', origin }, body: JSON.stringify(body),
-});
+const loadRoute = () => load('app/api/newsletter/route.ts', {
+  '@/lib/newsletter': newsletter,
+  '@/lib/emailOctopus': load('lib/emailOctopus.ts'),
+}).POST;
+const origin = 'http://localhost:3000';
+const request = (body, ip = '192.0.2.1', contentType = 'application/json', requestOrigin = origin) =>
+  new Request(origin + newsletter.newsletterEndpoint, {
+    method: 'POST',
+    headers: { 'Content-Type': contentType, origin: requestOrigin, 'x-vercel-forwarded-for': ip },
+    body: contentType === 'application/json' ? JSON.stringify(body) : new URLSearchParams(body),
+  });
 
-test('Mailchimp responses distinguish subscribed, pending, existing, and failures', () => {
-  for (const [result, msg, expected] of [
-    ['success', 'Thank you for subscribing!', 'success'],
-    ['success', 'Please confirm your subscription in the email we sent you.', 'pending'],
-    ['error', 'reader@example.com is already subscribed to list.', 'subscribed'],
-    ['error', '<a href="https://example.com">Please complete CAPTCHA</a>', 'error'],
-  ]) {
-    const parsed = newsletter.parseMailchimpResponse(`newsletter(${JSON.stringify({ result, msg })})`);
-    assert.equal(parsed.status, expected);
-    assert.ok(!parsed.message.includes('<a'));
-    assert.ok(!parsed.message.includes('reader@example.com'));
-  }
-  assert.throws(() => newsletter.parseMailchimpResponse('<html>Challenge</html>'));
-  assert.throws(() => newsletter.parseMailchimpResponse('{"result":"unknown","msg":"hello"}'));
-});
-
-test('handler validates locally and sends the exact audience fields upstream', async () => {
-  const original = global.fetch;
-  let calls = 0;
+test('upserts new and existing contacts with exact list tags and consent', async t => {
+  const post = loadRoute();
+  const listUrl = 'https://api.emailoctopus.com/lists/mock-list';
+  const email = 'reader@example.com';
+  const contactUrl = listUrl + '/contacts/' + createHash('md5').update(email).digest('hex');
+  const originalFetch = global.fetch;
+  const previous = { ...process.env };
+  process.env.EMAILOCTOPUS_API_KEY = 'test-key';
+  process.env.EMAILOCTOPUS_LIST_ID = 'mock-list';
+  t.after(() => {
+    global.fetch = originalFetch;
+    for (const name of ['EMAILOCTOPUS_API_KEY', 'EMAILOCTOPUS_LIST_ID']) {
+      if (previous[name] === undefined) delete process.env[name];
+      else process.env[name] = previous[name];
+    }
+  });
+  let contact, schemaLookups = 0, writes = 0, conflict = false;
   global.fetch = async (url, options) => {
-    calls++;
-    assert.equal(url.origin, 'https://toptierstate.us18.list-manage.com');
-    assert.equal(url.pathname, '/subscribe/post-json');
-    assert.equal(url.searchParams.get('u'), 'd74e761f7f05ede1718912346');
-    assert.equal(url.searchParams.get('id'), '0a37f9d12b');
-    assert.equal(url.searchParams.get('f_id'), '000aa4e6f0');
-    assert.equal(url.searchParams.get('EMAIL'), 'reader@example.com');
-    assert.equal(url.searchParams.get(newsletter.MAILCHIMP_HONEYPOT), '');
+    assert.equal(options.headers.Authorization, 'Bearer test-key');
     assert.equal(options.cache, 'no-store');
-    return new Response('newsletter({"result":"success","msg":"Thank you for subscribing!"})');
+    if (url === listUrl) {
+      schemaLookups++;
+      return Response.json({ fields: [
+        { label: 'First Name', tag: 'given_name' },
+        { label: 'Last Name', tag: 'surname' },
+        { label: 'Consent', tag: 'ConsentCustomTag' },
+      ] });
+    }
+    if (url === contactUrl) return contact ? Response.json(contact) : new Response(null, { status: 404 });
+    assert.equal(url, listUrl + '/contacts');
+    assert.equal(options.method, 'PUT');
+    const body = JSON.parse(options.body);
+    assert.equal(body.email_address, email);
+    assert.equal(body.status, 'subscribed');
+    writes++;
+    if (writes === 1) assert.deepEqual(body.fields, { given_name: 'Pat', surname: 'Lee', ConsentCustomTag: 'yes' });
+    else assert.deepEqual(body.fields, { ConsentCustomTag: 'yes' });
+    if (conflict) return new Response(null, { status: 409 });
+    contact = { ...body, fields: { ...contact?.fields, ...body.fields } };
+    return Response.json(contact);
   };
-  try {
-    for (const EMAIL of ['', 'invalid', 'a@@example.com', 'x'.repeat(255)]) {
-      assert.equal((await POST(request({ EMAIL }))).status, 400);
-    }
-    assert.equal((await POST(request({ EMAIL: 'reader@example.com', [newsletter.MAILCHIMP_HONEYPOT]: 'bot' }))).status, 400);
-    assert.equal((await POST(request({ EMAIL: 'reader@example.com' }, 'https://other.example'))).status, 403);
-    assert.equal((await POST(request({ EMAIL: 'x'.repeat(3000) }))).status, 413);
-    assert.equal(calls, 0);
-    const response = await POST(request({ EMAIL: ' reader@example.com ', [newsletter.MAILCHIMP_HONEYPOT]: '' }));
-    assert.equal((await response.json()).status, 'success');
-    assert.equal(response.headers.get('cache-control'), 'no-store');
-    assert.equal(calls, 1);
-    for (const upstream of [() => Promise.reject(new Error('timeout')), async () => new Response('<html>Challenge</html>'), async () => new Response('', { status: 429 })]) {
-      global.fetch = upstream;
-      const response = await POST(request({ EMAIL: 'reader@example.com' }));
-      assert.equal(response.status, 502);
-      assert.equal((await response.json()).fallback, true);
-    }
-  } finally { global.fetch = original; }
+  const first = await post(request({ email: ' Reader@Example.COM ', firstName: ' Pat ', lastName: 'Lee' }));
+  assert.equal(first.status, 200);
+  assert.equal(first.headers.get('cache-control'), 'no-store');
+  assert.deepEqual(await first.json(), { status: 'success', message: "You're in! Watch your inbox for Top Tier Weekly." });
+  for (const contentType of ['application/json', 'application/x-www-form-urlencoded']) {
+    const response = await post(request({ email }, '192.0.2.1', contentType));
+    assert.deepEqual(await response.json(), { status: 'subscribed', message: "You're already subscribed." });
+  }
+  conflict = true;
+  assert.equal((await (await post(request({ email }))).json()).status, 'subscribed');
+  assert.equal(contact.fields.ConsentCustomTag, 'yes');
+  assert.equal(contact.fields.given_name, 'Pat');
+  assert.equal(writes, 4);
+  assert.equal(schemaLookups, 1);
+});
+
+test('rejects invalid names, email, bot patterns, honeypot, and excessive requests locally', async t => {
+  const post = loadRoute();
+  const originalFetch = global.fetch;
+  let calls = 0;
+  global.fetch = async () => { calls++; throw new Error('Unexpected network request'); };
+  t.after(() => { global.fetch = originalFetch; });
+  const invalid = [
+    { email: 'invalid' },
+    { email: 'reader@example.com', website: 'bot' },
+    { email: 'aaaaaaaaaaaa@example.com' },
+    { email: 'reader@nowhere.invalid' },
+    { email: 'reader@example.com', firstName: {} },
+  ];
+  for (const input of invalid) assert.equal((await post(request(input))).status, 400);
+  const limited = await post(request({ email: 'reader@example.com' }));
+  assert.equal(limited.status, 429);
+  assert.ok(Number(limited.headers.get('retry-after')) > 0);
+  assert.equal((await post(request({ email: 'bad' }, '192.0.2.2'))).status, 400);
+  assert.equal((await post(request({ email: 'x'.repeat(3000) }, '192.0.2.2'))).status, 413);
+  assert.equal((await post(request({}, '192.0.2.2', 'application/json', 'https://other.example'))).status, 403);
+  assert.equal(calls, 0);
 });
