@@ -14,6 +14,7 @@ import { RenderedArticleContent } from "@/components/RenderedArticleContent";
 import { ArticleShare } from "@/components/ArticleShare";
 import { NewsletterSignup } from "@/components/NewsletterSignup";
 import { getArticleImage, getSocialImageUrl, getXShareArticleUrl, siteUrl } from "@/lib/articleSocialImage";
+import { coverWidth, coverHeight } from "@/lib/articleCover";
 
 // Published article metadata must reflect edits immediately, especially when
 // a cover image is replaced after X has previously crawled the article URL.
@@ -79,8 +80,8 @@ export async function generateMetadata({
           secureUrl: socialImage,
           alt: data.title,
           type: "image/png",
-          width: 1200,
-          height: 675,
+          width: coverWidth,
+          height: coverHeight,
         },
       ],
     },
@@ -176,8 +177,8 @@ export default async function ArticlePage({
           <div className="article-cover-frame">
 
             <Image
-              width={1600}
-              height={900}
+              width={coverWidth}
+              height={coverHeight}
               sizes="(max-width: 1040px) 100vw, 1040px"
               unoptimized={!/^https:\/\/(?:[^/]+\.)?supabase\.co\//i.test(data.cover_image_url) && !data.cover_image_url.startsWith("/")}
               className="cover"

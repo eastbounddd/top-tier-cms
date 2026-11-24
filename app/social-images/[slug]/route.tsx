@@ -1,8 +1,8 @@
-﻿import sharp from "sharp";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { createClient } from "@/lib/supabase/server";
 import { getArticleImage } from "@/lib/articleSocialImage";
+import { coverCrop } from "@/lib/articleCover";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -15,7 +15,7 @@ export async function GET(_request: Request, { params }: { params: Promise<{ slu
 
   try {
     let png: Buffer;
-    const render = (input: Buffer) => sharp(input, { limitInputPixels: 40000000 }).rotate().resize(1200, 675, { fit: "cover" }).png().toBuffer();
+    const render = (input: Buffer) => coverCrop(input).png().toBuffer();
     try {
       const response = await fetch(getArticleImage(data), { cache: "no-store", signal: AbortSignal.timeout(10000) });
       if (!response.ok) throw new Error(`Image request failed: ${response.status}`);

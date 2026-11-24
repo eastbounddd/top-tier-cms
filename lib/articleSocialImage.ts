@@ -25,7 +25,7 @@ export function getArticleImage(article: { cover_image_url?: string | null; body
 export function getSocialImageUrl(slug: string, image: string) {
   // Include the entire URL: folders and query parameters can identify replacements too.
   const version = createHash("sha256").update(image).digest("hex").slice(0, 20);
-  return `${siteUrl}/social-images/${encodeURIComponent(slug)}?v=3-${version}`;
+  return `${siteUrl}/social-images/${encodeURIComponent(slug)}?v=4-${version}`;
 }
 
 export function getXShareArticleUrl(slug: string, image: string) {

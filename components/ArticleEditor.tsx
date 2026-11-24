@@ -2,7 +2,6 @@
 
 import {
   ChangeEvent,
-  CSSProperties,
   useEffect,
   useRef,
   useState,
@@ -64,6 +63,8 @@ export function ArticleEditor() {
   const [busy, setBusy] = useState(false);
   const [uploading, setUploading] = useState("");
   const [message, setMessage] = useState("");
+  const [coverPreview, setCoverPreview] = useState("");
+  const [coverUpscaled, setCoverUpscaled] = useState(false);
 
   const rememberEditorSelection = () => {
     const selection = window.getSelection();
@@ -187,7 +188,7 @@ export function ArticleEditor() {
     savedRange.current = range;
   };
 
-  const upload = async (file: File, bucket: string) => {
+  const upload = async (file: File, bucket: string, folder = "") => {
     const supabase = createClient();
     const {
       data: { user },
@@ -196,7 +197,7 @@ export function ArticleEditor() {
     if (!user) throw new Error("You are not signed in.");
 
     const cleanName = file.name.replace(/[^a-zA-Z0-9._-]/g, "-");
-    const path = `${user.id}/${Date.now()}-${crypto.randomUUID()}-${cleanName}`;
+    const path = `${user.id}/${folder}${Date.now()}-${crypto.randomUUID()}-${cleanName}`;
 
     const { error } = await supabase.storage.from(bucket).upload(path, file, {
       upsert: false,
@@ -208,39 +209,34 @@ export function ArticleEditor() {
 
     const { data } = supabase.storage.from(bucket).getPublicUrl(path);
     if (!data.publicUrl) throw new Error("Upload finished but no public URL was returned.");
-    return data.publicUrl;
-  };
-
-  const compressCover = async (file: File): Promise<File> => {
-    const bitmap = await createImageBitmap(file);
-    try {
-      const scale = Math.min(1, 1600 / bitmap.width);
-      const canvas = document.createElement("canvas");
-      canvas.width = Math.max(1, Math.round(bitmap.width * scale));
-      canvas.height = Math.max(1, Math.round(bitmap.height * scale));
-      const context = canvas.getContext("2d");
-      if (!context) return file;
-      context.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
-      const blob = await new Promise<Blob | null>(resolve => canvas.toBlob(resolve, "image/webp", 0.82));
-      return blob?.type === "image/webp" ? new File([blob], file.name.replace(/\.[^.]+$/, "") + ".webp", { type: "image/webp" }) : file;
-    } finally { bitmap.close(); }
+    return { path, url: data.publicUrl };
   };
 
   const cover = async (file?: File) => {
-    if (!file) return;
+    if (!file || busy) return;
+    const preview = URL.createObjectURL(file);
+    setCoverPreview(preview);
     setBusy(true);
     setUploading("Uploading cover image…");
     setMessage("");
 
     try {
-      let prepared = file;
-      try { prepared = await compressCover(file); } catch { /* Keep the original if the browser cannot decode it. */ }
-      const url = await upload(prepared, "article-images");
-      setForm((f) => ({ ...f, cover_image_url: url }));
+      const { path } = await upload(file, "article-images", "cover-originals/");
+      const response = await fetch("/api/article-cover", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ path }),
+      });
+      const result = await response.json().catch(() => null);
+      if (!response.ok || !result?.url) throw new Error(result?.error || "The cover image could not be processed.");
+      setForm((f) => ({ ...f, cover_image_url: result.url }));
+      setCoverUpscaled(result.upscaled);
       setMessage("Cover image uploaded. It will be saved with the article.");
     } catch (e: any) {
       setMessage(`Cover upload failed: ${e.message}`);
     } finally {
+      setCoverPreview("");
+      URL.revokeObjectURL(preview);
       setBusy(false);
       setUploading("");
     }
@@ -483,7 +479,7 @@ export function ArticleEditor() {
     setMessage("");
 
     try {
-      const url = await upload(
+      const { url } = await upload(
         file,
         isMp4 ? "article-videos" : "article-images"
       );
@@ -608,60 +604,65 @@ const deleteArticle = async () => {
     setBusy(true);
     setMessage("");
 
-    const supabase = createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    try {
+      const supabase = createClient();
+      const { data: { user }, error: authError } = await supabase.auth.getUser();
+      if (authError) throw new Error(authError.message);
+      if (!user) throw new Error("Your login session expired. Please sign in again.");
 
-    if (!user) {
+      const isSponsored = form.is_sponsored ?? false;
+      const payload = {
+        title: form.title,
+        slug: articleSlug,
+        excerpt: form.excerpt,
+        category: form.category,
+        school: form.school,
+        cover_image_url: form.cover_image_url,
+        is_top_story: form.is_top_story,
+        status,
+        author_id: user.id,
+        writer_profile_id: writerId || null,
+        body: {
+          html: serializeEditorHtml()
+            .replace(/<h1\b[^>]*>/gi, "")
+            .replace(/<\/h1>/gi, ""),
+          author_name: authorName.trim(),
+        },
+        ...(status === "published" && form.status !== "published"
+          ? { published_at: new Date().toISOString() }
+          : {}),
+      };
+
+      const articles = supabase.from("articles");
+      const fields = Object.keys(payload).join(",");
+      const { error: schemaError } = await articles.select(`${fields},is_sponsored`).limit(0);
+      // Legacy databases can save unchecked articles while the migration is pending.
+      if (schemaError) {
+        const missingSponsorship = schemaError.code === "42703" && schemaError.message.includes("is_sponsored");
+        if (isSponsored || !missingSponsorship) throw new Error(schemaError.message);
+
+        const { error: legacySchemaError } = await articles.select(fields).limit(0);
+        if (legacySchemaError) throw new Error(legacySchemaError.message);
+      }
+
+      const article = schemaError ? payload : { ...payload, is_sponsored: isSponsored };
+      const { error } = id
+        ? await articles.update(article).eq("id", id).select("id").single()
+        : await articles.insert(article);
+      if (error) throw new Error(error.message);
+
+      router.push("/dashboard");
+      router.refresh();
+    } catch (error) {
+      setMessage(`Could not save article: ${error instanceof Error ? error.message : String(error)}`);
+    } finally {
       setBusy(false);
-      setMessage("Your login session expired. Please sign in again.");
-      return;
     }
-
-    const payload: any = {
-      ...form,
-      slug: articleSlug,
-      status,
-      author_id: user.id,
-      writer_profile_id: writerId || null,
-      body: {
-        html: serializeEditorHtml()
-          .replace(/<h1\b[^>]*>/gi, "")
-          .replace(/<\/h1>/gi, ""),
-        author_name: authorName.trim(),
-      },
-    };
-
-    if (status === "published" && form.status !== "published") {
-      payload.published_at = new Date().toISOString();
-    }
-
-    let error: any = null;
-    if (id) {
-      ({ error } = await supabase.from("articles").update(payload).eq("id", id));
-    } else {
-      ({ error } = await supabase.from("articles").insert(payload));
-    }
-
-    setBusy(false);
-
-    if (error) {
-      setMessage(`Could not save article: ${error.message}`);
-      return;
-    }
-
-    router.push("/dashboard");
-    router.refresh();
   };
 
   const onEditorInput = () => {
     setEditorHtml(serializeEditorHtml());
   };
-
-  const coverStyle = {
-    "--preview-bg": `url("${form.cover_image_url || "/top-tier-logo.png"}")`,
-  } as CSSProperties;
 
   return (
     <div className="editor-layout">
@@ -775,15 +776,16 @@ const deleteArticle = async () => {
             }}
           />
           <span className="field-help">
-            Recommended 1600 × 900. The complete image is shown in the CMS and on
-            the article page.
+            Cover images are center-cropped to 1600 × 900.
           </span>
+          {coverUpscaled && <span role="status">This image was upscaled to 1600 × 900 and may look soft.</span>}
         </label>
 
         {form.cover_image_url && (
-          <button type="button" disabled={busy} onClick={() =>
-            setForm((f) => ({ ...f, cover_image_url: "" }))
-          }>
+          <button type="button" disabled={busy} onClick={() => {
+            setForm((f) => ({ ...f, cover_image_url: "" }));
+            setCoverUpscaled(false);
+          }}>
             Remove cover image
           </button>
         )}
@@ -908,9 +910,9 @@ const deleteArticle = async () => {
       <aside className="preview">
         <small>LIVE ARTICLE PREVIEW</small>
 
-        <div className="preview-image clean-media" style={coverStyle}>
+        <div className="preview-image">
           <img
-            src={form.cover_image_url || "/top-tier-logo.png"}
+            src={coverPreview || form.cover_image_url || "/top-tier-logo.png"}
             alt="Article cover preview"
           />
         </div>
