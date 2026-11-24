@@ -8,6 +8,7 @@ import {
 } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { saveArticle } from "@/app/dashboard/new/actions";
 import { articleSchoolOptions } from "@/lib/schools";
 import { RenderedArticleContent } from "@/components/RenderedArticleContent";
 import { isXStatusUrl, renderStandaloneXLinks } from "@/lib/renderXLinks";
@@ -619,12 +620,6 @@ const deleteArticle = async () => {
     setMessage("");
 
     try {
-      const supabase = createClient();
-      const { data: { user }, error: authError } = await supabase.auth.getUser();
-      if (authError) throw new Error(authError.message);
-      if (!user) throw new Error("Your login session expired. Please sign in again.");
-
-      const isSponsored = form.is_sponsored ?? false;
       const payload = {
         title: form.title,
         slug: articleSlug,
@@ -633,6 +628,7 @@ const deleteArticle = async () => {
         school: form.school,
         cover_image_url: form.cover_image_url,
         is_top_story: form.is_top_story,
+        is_sponsored: form.is_sponsored ?? false,
         status,
         writer_profile_id: writerId || null,
         body: {
@@ -646,27 +642,8 @@ const deleteArticle = async () => {
           : {}),
       };
 
-      const articles = supabase.from("articles");
-      const fields = Object.keys(payload).join(",");
-      const { error: schemaError } = await articles.select(`${fields},is_sponsored`).limit(0);
-      // Legacy databases can save unchecked articles while the migration is pending.
-      if (schemaError) {
-        const missingSponsorship = schemaError.code === "42703" && schemaError.message.includes("is_sponsored");
-        if (isSponsored || !missingSponsorship) throw new Error(schemaError.message);
-
-        const { error: legacySchemaError } = await articles.select(fields).limit(0);
-        if (legacySchemaError) throw new Error(legacySchemaError.message);
-      }
-
-      const article = schemaError ? payload : { ...payload, is_sponsored: isSponsored };
-      if (id) {
-        const { data, error } = await articles.update(article).eq("id", id).select("id").maybeSingle();
-        if (error) throw new Error(error.message);
-        if (!data) throw new Error(articleUnavailable);
-      } else {
-        const { error } = await articles.insert({ ...article, author_id: user.id });
-        if (error) throw new Error(error.message);
-      }
+      const { error } = await saveArticle(id, payload);
+      if (error) throw new Error(error);
 
       router.push("/dashboard");
       router.refresh();
