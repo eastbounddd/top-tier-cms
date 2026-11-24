@@ -946,3 +946,6 @@
 .writer-photo-preview{width:112px;height:112px;object-fit:cover;border-radius:50%;display:block;margin-bottom:10px;background:#fff}
 
 .writer-row-actions{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.dashboard-mobile-nav{display:none}
+@media(max-width:900px){.dashboard-mobile-nav{display:flex;margin-bottom:22px}.dashboard-mobile-nav a{display:inline-flex;align-items:center;min-height:44px;padding:10px 16px;border:1px solid #59606c;font-weight:700}.dashboard-mobile-nav a:hover,.dashboard-mobile-nav a:focus-visible{border-color:var(--red)}}
+@media(max-width:600px){.manager-page{padding:28px 0 48px}.manager-page .panel{padding:16px}.manager-page .writer-form input,.manager-page .writer-form textarea,.manager-page .writer-form select{box-sizing:border-box;width:100%;min-width:0;font-size:16px}.manager-page .writer-row{gap:12px;align-items:flex-start;flex-wrap:wrap}.manager-page .writer-row>div:first-child{min-width:0;overflow-wrap:anywhere}.manager-page .writer-row button{min-height:44px;padding:8px 14px}.writer-form{scroll-margin-top:16px}}

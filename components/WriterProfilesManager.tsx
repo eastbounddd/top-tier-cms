@@ -1,6 +1,6 @@
 ﻿"use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import type { Writer } from "@/lib/writers";
 
@@ -9,6 +9,7 @@ const imageTypes = ["image/jpeg", "image/png", "image/webp"];
 const maxImageSize = 10 * 1024 * 1024;
 
 export function WriterProfilesManager({ writers }: { writers: Writer[] }) {
+  const formRef = useRef<HTMLFormElement>(null);
   const [items, setItems] = useState(writers);
   const [form, setForm] = useState(blank);
   const [photo, setPhoto] = useState<File | null>(null);
@@ -85,7 +86,7 @@ export function WriterProfilesManager({ writers }: { writers: Writer[] }) {
     }
   }
 
-  return <><form className="panel writer-form" onSubmit={save}><h2>{form.id ? "Edit public writer profile" : "Create public writer profile"}</h2>
+  return <><form ref={formRef} className="panel writer-form" onSubmit={save}><h2>{form.id ? "Edit public writer profile" : "Create public writer profile"}</h2>
     <label>Name<input required disabled={busy} value={form.name} onChange={e => change("name", e.target.value)} /></label>
     <label>URL slug<input required disabled={busy} pattern="[a-z0-9]+(-[a-z0-9]+)*" value={form.slug} onChange={e => change("slug", e.target.value)} placeholder="jane-smith" /></label>
     <label>Profile photo<input type="file" accept="image/jpeg,image/png,image/webp" disabled={busy} onChange={e => { selectPhoto(e.target.files?.[0]); e.currentTarget.value = ""; }} /><span>JPG, PNG, or WebP; up to 10 MB. Save the profile to apply the photo.</span></label>
@@ -97,6 +98,6 @@ export function WriterProfilesManager({ writers }: { writers: Writer[] }) {
     <label>Bio (separate paragraphs with a blank line)<textarea disabled={busy} rows={6} value={form.bio} onChange={e => change("bio", e.target.value)} /></label>
     <button className="red-button" disabled={busy}>{busy ? "Saving…" : "Save profile"}</button>
     {form.id && <button type="button" disabled={busy} onClick={() => { setForm(blank); setPhoto(null); setMessage(""); }}>Cancel editing</button>}
-    </form>
-    <div className="panel"><h2>Public profiles</h2>{message && <p role="status">{message}</p>}{items.map(w => <div className="writer-row" key={w.id}><div><b>{w.name}</b><span>/author/{w.slug}</span></div><div className="writer-row-actions"><button type="button" disabled={busy} onClick={() => { setPhoto(null); setMessage(""); setForm({ id: w.id, slug: w.slug, name: w.name, profile_image: w.profile_image || "", coverage: (w.coverage || []).join(", "), x_handle: w.x_handle || "", bio: w.bio || "", title: w.title || "", joined_date: w.joined_date || "" }); }}>Edit</button><button type="button" className="delete-button" disabled={busy} aria-label={`Delete ${w.name}'s profile`} onClick={() => void deleteProfile(w)}>Delete</button></div></div>)}</div></>;
+    {message && <p role="status">{message}</p>}</form>
+    <div className="panel"><h2>Public profiles</h2>{message && <p>{message}</p>}{items.map(w => <div className="writer-row" key={w.id}><div><b>{w.name}</b><span>/author/{w.slug}</span></div><div className="writer-row-actions"><button type="button" disabled={busy} onClick={() => { setPhoto(null); setMessage(""); setForm({ id: w.id, slug: w.slug, name: w.name, profile_image: w.profile_image || "", coverage: (w.coverage || []).join(", "), x_handle: w.x_handle || "", bio: w.bio || "", title: w.title || "", joined_date: w.joined_date || "" }); formRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }); }}>Edit</button><button type="button" className="delete-button" disabled={busy} aria-label={`Delete ${w.name}'s profile`} onClick={() => void deleteProfile(w)}>Delete</button></div></div>)}</div></>;
 }
