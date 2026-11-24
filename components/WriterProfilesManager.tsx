@@ -72,7 +72,6 @@ export function WriterProfilesManager({ writers }: { writers: Writer[] }) {
     <label>URL slug<input required disabled={busy} pattern="[a-z0-9]+(-[a-z0-9]+)*" value={form.slug} onChange={e => change("slug", e.target.value)} placeholder="jane-smith" /></label>
     <label>Profile photo<input type="file" accept="image/jpeg,image/png,image/webp" disabled={busy} onChange={e => { selectPhoto(e.target.files?.[0]); e.currentTarget.value = ""; }} /><span>JPG, PNG, or WebP; up to 10 MB. Save the profile to apply the photo.</span></label>
     {(preview || form.profile_image) && <div><img className="writer-photo-preview" src={preview || form.profile_image} alt={`${form.name || "Writer"} profile preview`} /><button type="button" disabled={busy} onClick={() => { setPhoto(null); change("profile_image", ""); }}>Remove photo</button></div>}
-    <label>Photo URL or local path<input disabled={busy} value={form.profile_image} onChange={e => { setPhoto(null); change("profile_image", e.target.value); }} /></label>
     <label>Title<input disabled={busy} value={form.title} onChange={e => change("title", e.target.value)} /></label>
     <label>Coverage (comma separated)<input disabled={busy} value={form.coverage} onChange={e => change("coverage", e.target.value)} /></label>
     <label>X handle<input disabled={busy} pattern="@?[A-Za-z0-9_]{1,15}" value={form.x_handle} onChange={e => change("x_handle", e.target.value)} /></label>
