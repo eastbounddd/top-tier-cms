@@ -11,7 +11,7 @@ export function Header() {
     <div className="breaking"><b>BREAKING</b><span>TOP TIER — COLLEGE FOOTBALL NEWS, ANALYSIS AND ORIGINAL REPORTING</span><i>● LIVE</i></div>
     <header className="header shell">
       <Link href="/" className="brand"><Image src="/top-tier-logo-optimized.webp" alt="Top Tier" width={74} height={74} priority /></Link>
-      <nav><Link href="/#top-stories">Top Stories</Link><Link href="/schools">Schools</Link><Link href="/#college-football">College Football</Link><Link href="/#other-news">Other News</Link><Link href="/articles">All Articles</Link><Link href="/recruiting">Recruiting</Link><Link href="/writers">Writers</Link><Link href="/newsletter">Newsletter</Link></nav>
+      <nav className="primary-nav" aria-label="Main navigation"><Link href="/#top-stories">Top Stories</Link><Link href="/schools">Schools</Link><Link href="/#college-football">College Football</Link><Link href="/college-basketball">College Basketball</Link><Link href="/#other-news">Other News</Link><Link href="/articles">All Articles</Link><Link href="/recruiting">Recruiting</Link><Link href="/writers">Writers</Link><Link href="/newsletter">Newsletter</Link></nav>
       <button className="mobile-menu-button" type="button" aria-label="Open navigation menu" aria-expanded={menuOpen} aria-controls="mobile-navigation" onClick={() => setMenuOpen((open) => !open)}>
         <span /><span /><span />
       </button>
@@ -19,6 +19,7 @@ export function Header() {
         <Link href="/#top-stories" onClick={() => setMenuOpen(false)}>Top Stories</Link>
         <Link href="/schools" onClick={() => setMenuOpen(false)}>Schools</Link>
         <Link href="/#college-football" onClick={() => setMenuOpen(false)}>College Football</Link>
+        <Link href="/college-basketball" onClick={() => setMenuOpen(false)}>College Basketball</Link>
         <Link href="/#other-news" onClick={() => setMenuOpen(false)}>Other News</Link>
         <Link href="/articles" onClick={() => setMenuOpen(false)}>All Articles</Link>
         <Link href="/recruiting" onClick={() => setMenuOpen(false)}>Recruiting</Link>

@@ -83,6 +83,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       changeFrequency: "daily",
       priority: 0.8,
     },
+    { url: `${siteUrl}/college-basketball`, changeFrequency: "daily", priority: 0.8 },
     { url: `${siteUrl}/newsletter`, changeFrequency: "weekly", priority: 0.6 },
     { url: `${siteUrl}/writers`, changeFrequency: "weekly", priority: 0.7 },
     ...(writers || []).map(writer => ({ url: `${siteUrl}/author/${encodeURIComponent(writer.slug)}`, changeFrequency: "weekly" as const, priority: 0.7 })),

@@ -27,7 +27,7 @@ export function Footer() {
   return <>
     <footer><div className="shell"><NewsletterSignup variant="footer" /></div><div className="shell footer-grid">
       <div><Image src="/top-tier-logo-optimized.webp" alt="Top Tier" width={170} height={170} className="footer-logo"/><p>Independent sports media built for fans who want the story before everyone else.</p></div>
-      <div><h2>Coverage</h2><Link href="/#college-football">College Football</Link><Link href="/#other-news">Other News</Link></div>
+      <div><h2>Coverage</h2><Link href="/#college-football">College Football</Link><Link href="/college-basketball">College Basketball</Link><Link href="/#other-news">Other News</Link></div>
       <div><h2>Company</h2><Link href="/about">About</Link><Link href="/privacy">Privacy Policy</Link><Link href="/terms">Terms of Use</Link><a href="mailto:partners@ttmediaco.net?subject=Advertising%20inquiry" onClick={e => { e.preventDefault(); trigger.current = e.currentTarget; setModal("advertise"); }}>Advertise</a><a href="mailto:partners@ttmediaco.net">Contact</a></div>
       <div><h2>Writers</h2><Link href="/login">Writer Login</Link><a href="mailto:partners@ttmediaco.net?subject=Story%20submission" onClick={e => { e.preventDefault(); trigger.current = e.currentTarget; setModal("story"); }}>Submit a Story</a></div>
     </div><div className="shell footer-bottom">© 2026 Top Tier. All rights reserved.<span>Built for the next headline.</span></div></footer>

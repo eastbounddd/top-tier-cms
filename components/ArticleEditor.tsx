@@ -699,6 +699,7 @@ const deleteArticle = async () => {
               }
             >
               <option>College Football</option>
+              <option>College Basketball</option>
               <option>Breaking News</option>
               <option>Recruiting</option>
               <option>Transfer Portal</option>
