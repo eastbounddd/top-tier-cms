@@ -1,6 +1,8 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  trailingSlash: false,
+  expireTime: 360,
   async redirects() {
     return [
       {
@@ -14,6 +16,7 @@ const nextConfig: NextConfig = {
     return [{ source: "/:asset(.*\\.(?:png|webp|ico))", headers: [{key:"Cache-Control",value:"public, max-age=86400, stale-while-revalidate=604800"}] }];
   },
   images: {
+    deviceSizes: [390, 640, 768, 960, 1200, 1600, 1920],
     formats: ["image/avif", "image/webp"],
     remotePatterns: [
       { protocol: "https", hostname: "**.supabase.co" },

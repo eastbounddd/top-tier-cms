@@ -1,8 +1,5 @@
 import type { MetadataRoute } from "next";
-
-const siteUrl = (
-  process.env.NEXT_PUBLIC_SITE_URL || "https://www.toptierstate.net"
-).replace(/\/$/, "");
+import { canonicalSite as siteUrl } from "@/lib/pageMetadata";
 
 export default function robots(): MetadataRoute.Robots {
   return {

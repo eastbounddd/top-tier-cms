@@ -4,32 +4,29 @@ import Image from "next/image";
 import { attachWriters } from "@/lib/writers";
 import { WriterCard } from "@/components/WriterCard";
 import type { Metadata } from "next";
-import { unstable_noStore as noStore } from "next/cache";
-import { notFound, permanentRedirect } from "next/navigation";
+import { notFound } from "next/navigation";
 import { cache } from "react";
-import { createClient } from "@/lib/supabase/server";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { RenderedArticleContent } from "@/components/RenderedArticleContent";
 import { ArticleShare } from "@/components/ArticleShare";
-import { NewsletterSignup } from "@/components/NewsletterSignup";
+import { EditorialNewsletter, JsonLd, LiveBoards } from "@/components/Editorial";
+import { articlePath, editorialClient, editorialDate, itemList, legacyArticleSlug, schoolByName, stories } from "@/lib/editorial";
+import { articlePresentation } from "@/lib/articlePresentation";
+import { schoolTheme } from "@/lib/schoolColors";
 import { getArticleImage, getSocialImageUrl, getXShareArticleUrl, siteUrl } from "@/lib/articleSocialImage";
 import { coverWidth, coverHeight } from "@/lib/articleCover";
 
-// Published article metadata must reflect edits immediately, especially when
-// a cover image is replaced after X has previously crawled the article URL.
-export const dynamic = "force-dynamic";
-export const revalidate = 0;
+export const revalidate = 60;
+export const dynamic = "force-static";
+export const generateStaticParams = () => [];
 
 const getArticle = cache(async (slug: string) => {
-  noStore();
-  const supabase = await createClient();
-  const { data } = await supabase
-    .from("articles")
-    .select("*,profiles(display_name,avatar_url)")
-    .eq("slug", slug)
-    .eq("status", "published")
-    .single();
+  const supabase = editorialClient();
+  const lookup = (value: string) => supabase.from("articles").select("*").eq("slug", value).eq("status", "published").maybeSingle();
+  let { data, error } = await lookup(slug);
+  if (!data && !error && slug === legacyArticleSlug) ({ data, error } = await lookup("n"));
+  if (error) throw new Error(error.message);
 
   if (!data) return null;
   return (await attachWriters(supabase, [data]))[0];
@@ -50,7 +47,7 @@ export async function generateMetadata({
     };
   }
 
-  const canonical = `${siteUrl}/articles/${data.slug}`;
+  const canonical = siteUrl + articlePath(data.slug);
   const image = getArticleImage(data);
   const socialImage = getSocialImageUrl(data.slug, image);
   const description =
@@ -68,9 +65,10 @@ export async function generateMetadata({
       description,
       url: canonical,
       publishedTime: data.published_at || undefined,
+      modifiedTime: data.content_updated_at || data.updated_at || data.published_at || undefined,
       authors: [
         (typeof data.body === "object" && data.body?.author_name) ||
-          (data.profiles as any)?.display_name ||
+          data.writer?.name || data.author_name ||
           "Top Tier",
       ],
       section: data.category,
@@ -95,111 +93,98 @@ export async function generateMetadata({
   };
 }
 
-export default async function ArticlePage({
-  params,
-}: {
-  params: Promise<{ slug: string }>;
-}) {
-  const { slug } = await params;
-  if (slug === "n" && await getArticle("no-such-thing-as-a-morale-victory-unless")) permanentRedirect("/articles/no-such-thing-as-a-morale-victory-unless");
-  const data = await getArticle(slug);
-
+export default async function ArticlePage({ params }: { params: Promise<{ slug: string }> }) {
+  const data = await getArticle((await params).slug);
   if (!data) notFound();
 
-  const body =
-    typeof data.body === "object" && data.body?.html
-      ? data.body.html
-      : String(data.body ?? "");
-
+  const rawBody = (typeof data.body === "object" ? data.body?.html : data.body) || data.body_html || "";
+  const { body, ranks, methodology, takeaways } = articlePresentation(rawBody, data.excerpt);
   const writer = data.writer;
-  const author = writer?.name ||
-    (typeof data.body === "object" && data.body?.author_name) ||
-    (data.profiles as any)?.display_name ||
-    "Top Tier";
-  const published = data.published_at
-    ? new Date(data.published_at).toLocaleDateString("en-US", {
-        month: "long",
-        day: "numeric",
-        year: "numeric",
-      })
-    : "";
-
-  const canonical = `${siteUrl}/articles/${data.slug}`;
+  const author = writer?.name || (typeof data.body === "object" && data.body?.author_name) || data.author_name || "Top Tier";
+  const school = schoolByName(data.school);
+  const schoolSlug = school?.slug || data.school?.trim().toLowerCase().replace(/\s+/g, "-");
+  const football = { name: "College Football", path: "/college-football" };
+  const topic = school ? { name: school.name, path: `/schools/${school.slug}` } :
+    data.school === "Recruiting" || data.category === "Recruiting" ? { name: "Recruiting", path: "/recruiting" } :
+    data.category === "College Basketball" ? { name: data.category, path: "/college-basketball" } :
+    data.category === "College Football" ? football : { name: data.school || data.category || "Latest", path: "/articles" };
+  const crumbs = topic.path === football.path ? [football] : [football, topic];
+  const path = articlePath(data.slug);
+  const canonical = siteUrl + path;
   const image = getArticleImage(data);
+  const socialImage = getSocialImageUrl(data.slug, image);
+  const published = data.published_at || undefined;
+  const modified = data.content_updated_at || data.updated_at || published;
+  const caption = typeof data.body?.cover_caption === "string" ? data.body.cover_caption : "";
+  const credit = typeof data.body?.cover_credit === "string" ? data.body.cover_credit : "";
 
-  const jsonLd = {
-    "@context": "https://schema.org",
-    "@type": "NewsArticle",
-    headline: data.title,
-    description: data.excerpt || undefined,
-    image: [image],
-    datePublished: data.published_at || undefined,
-    dateModified: data.content_updated_at || data.published_at || undefined,
+  const [schoolStories, generalStories] = await Promise.all([
+    school ? stories({ school: school.name, limit: 4 }) : Promise.resolve([]),
+    stories({ football: data.category !== "College Basketball", limit: 8 }),
+  ]);
+  const related = [...new Map([...schoolStories, ...generalStories].filter(story => story.id !== data.id).map(story => [story.id, story])).values()].slice(0, 3);
+  const organization = { "@id": `${siteUrl}/#organization` };
+  const news = {
+    "@context": "https://schema.org", "@type": "NewsArticle",
+    headline: data.title, description: data.excerpt || undefined,
+    image: [{ "@type": "ImageObject", url: socialImage, width: coverWidth, height: coverHeight }],
+    datePublished: published, dateModified: modified,
     author: [{ "@type": /^@?tops*tier/i.test(author) ? "Organization" : "Person", name: author, ...(writer ? { url: `${siteUrl}/author/${writer.slug}` } : {}) }],
-    publisher: {
-      "@type": "Organization",
-      name: "Top Tier",
-      url: siteUrl,
-      sameAs: ["https://x.com/TopTierStateX"],
-      logo: {
-        "@type": "ImageObject",
-        url: `${siteUrl}/top-tier-logo-optimized.webp`,
-        width: 384, height: 384,
-      },
-    },
-    mainEntityOfPage: canonical,
+    publisher: organization, mainEntityOfPage: canonical,
   };
+  const rankLinks = ranks.map(({ anchor, number, name }) => <li key={anchor}><a href={`#${anchor}`}>#{number} <span>{name}</span></a></li>);
 
-  return (
-    <>
-      <Header />
-
-      <main id="main-content" className="article-page shell">
-        <div className="article-kicker">{data.is_sponsored ? "Sponsored" : data.category}</div>
-        {data.is_sponsored && <p className="sponsored-disclosure">This article is sponsored content.</p>}
-        <h1>{data.title}</h1>
-
-        {data.excerpt && <p className="article-deck">{data.excerpt}</p>}
-
-        <div className="article-info">
-          <div className="byline">
-            By <strong>{writer ? <Link className="writer-link" href={`/author/${writer.slug}`}>{author}</Link> : author}</strong>
+  return <>
+    <Header />
+    <main id="main-content" className="editorial editorial-article shell" style={schoolTheme(schoolSlug)}>
+      <nav className="editorial-breadcrumb" aria-label="Breadcrumb"><Link href="/">Home</Link>{crumbs.map(crumb =>
+        <span key={crumb.path}><span aria-hidden="true">/</span><Link href={crumb.path}>{crumb.name}</Link></span>)}</nav>
+      <div className="editorial-article-grid">
+        <article className="reading-column">
+          <Link className="editorial-pill" href={topic.path}>{topic.name}</Link>
+          {data.is_sponsored && <p className="sponsored-disclosure">This article is sponsored content.</p>}
+          <h1>{data.title}</h1>
+          {data.excerpt && <p className="editorial-dek">{data.excerpt}</p>}
+          <div className="editorial-byline">
+            <div>By {writer ? <Link href={`/author/${writer.slug}`}>{author}</Link> : <strong>{author}</strong>}
+              <div className="editorial-dates">
+                {published && <span>Published <time dateTime={published}>{editorialDate(published, true)}</time></span>}
+                {modified && modified !== published && <span>Updated <time dateTime={modified}>{editorialDate(modified, true)}</time></span>}
+              </div>
+            </div>
+            <ArticleShare title={data.title} url={canonical} xUrl={getXShareArticleUrl(data.slug, image)} />
           </div>
-          {published && <time className="article-date" dateTime={data.published_at}>{published}</time>}
-          <ArticleShare
-            title={data.title}
-            url={canonical}
-            xUrl={getXShareArticleUrl(data.slug, image)}
-          />
-        </div>
-
-        {data.cover_image_url && (
-          <div className="article-cover-frame">
-
-            <Image
-              width={coverWidth}
-              height={coverHeight}
-              sizes="(max-width: 1040px) 100vw, 1040px"
-              unoptimized={!/^https:\/\/(?:[^/]+\.)?supabase\.co\//i.test(data.cover_image_url) && !data.cover_image_url.startsWith("/")}
-              className="cover"
-              src={data.cover_image_url}
-              alt={data.title}
-              priority
-            />
-          </div>
-        )}
-
-        <RenderedArticleContent html={body} className="prose" />
-        {writer && <WriterCard writer={writer} />}
-        <NewsletterSignup variant="article" />
-      </main>
-
-      <Footer />
-
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: schemaJson([jsonLd, breadcrumbSchema([{name:"Articles",path:"/articles"},{name:data.title,path:`/articles/${data.slug}`}])]) }}
-      />
-    </>
-  );
+          {data.cover_image_url && <figure className="editorial-cover">
+            <div className="article-cover-frame">
+              <Image width={coverWidth} height={coverHeight} sizes="(max-width: 820px) 100vw, 700px"
+                unoptimized={!/^https:\/\/(?:[^/]+\.)?supabase\.co\//i.test(data.cover_image_url) && !data.cover_image_url.startsWith("/")}
+                className="cover" src={data.cover_image_url} alt={data.title} priority fetchPriority="high" />
+            </div>
+            {(caption || credit) && <figcaption>{[caption, credit].filter(Boolean).join(" · ")}</figcaption>}
+          </figure>}
+          {ranks.length > 0 ? <>
+            {methodology && <section className="takeaways"><h2>Ranking Criteria</h2><p>{methodology}</p></section>}
+            <nav className="rank-jumps" aria-label="Jump to rank"><ul>{rankLinks}</ul></nav>
+          </> : takeaways.length > 0 && <section className="takeaways">
+            <h2>{takeaways.length > 1 ? "Key Takeaways" : "Quick Answer"}</h2>
+            <ul>{takeaways.map(text => <li key={text}>{text}</li>)}</ul>
+          </section>}
+          <RenderedArticleContent html={body} className="prose editorial-prose" />
+          {writer && <WriterCard writer={writer} />}
+        </article>
+        <aside className="editorial-rail">
+          {school && <Link className="school-rail-link" href={topic.path}>More {school.name} coverage →</Link>}
+          {ranks.length > 0 && <nav className="rail-card rank-rail" aria-label="Ranking contents"><h2>In This Ranking</h2><ol>{rankLinks}</ol></nav>}
+          <LiveBoards />
+          {related.length > 0 && <section className="rail-card"><h2>Related Stories</h2><ul>{related.map(story =>
+            <li key={story.id}><Link href={articlePath(story.slug)}>{story.title}</Link></li>
+          )}</ul></section>}
+        </aside>
+      </div>
+      <EditorialNewsletter />
+    </main>
+    <Footer newsletter={false} />
+    <JsonLd data={[news, breadcrumbSchema([...crumbs, { name: data.title, path }]),
+      ...(ranks.length ? [itemList("Ranking", ranks.map(rank => ({ name: rank.name, path: `${path}#${rank.anchor}` })))] : [])]} />
+  </>;
 }

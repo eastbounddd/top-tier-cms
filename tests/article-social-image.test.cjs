@@ -13,7 +13,7 @@ function load(file, dependencies = {}) {
   );
   return module.exports;
 }
-const images = load('lib/articleSocialImage.ts');
+const images = load('lib/articleSocialImage.ts', { './articlePaths': load('lib/articlePaths.ts') });
 const covers = load('lib/articleCover.ts');
 
 test('replacing or removing an image updates the preview source and its version', () => {

@@ -1,10 +1,9 @@
 import type { MetadataRoute } from "next";
 import { createClient } from "@supabase/supabase-js";
 import { schools } from "@/lib/schools";
+import { articlePath, legacyArticleSlug } from "@/lib/articlePaths";
+import { canonicalSite as siteUrl } from "@/lib/pageMetadata";
 
-const siteUrl = (
-  process.env.NEXT_PUBLIC_SITE_URL || "https://www.toptierstate.net"
-).replace(/\/$/, "");
 
 // Article slugs can be edited after publishing. Always read the current rows
 // from Supabase so the sitemap never retains a previous slug in an ISR cache.
@@ -15,6 +14,7 @@ type SitemapArticle = {
   slug: string;
   published_at: string | null;
   content_updated_at?: string | null;
+  updated_at?: string | null;
   school?: string | null;
 };
 
@@ -83,6 +83,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       changeFrequency: "daily",
       priority: 0.8,
     },
+    { url: `${siteUrl}/college-football`, lastModified: latest, changeFrequency: "daily", priority: 0.9 },
     { url: `${siteUrl}/college-basketball`, changeFrequency: "daily", priority: 0.8 },
     { url: `${siteUrl}/newsletter`, changeFrequency: "weekly", priority: 0.6 },
     { url: `${siteUrl}/writers`, changeFrequency: "weekly", priority: 0.7 },
@@ -95,9 +96,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     })),
   ];
 
-  const articlePages: MetadataRoute.Sitemap = articles.map((article) => ({
-    url: `${siteUrl}/articles/${encodeURIComponent(article.slug)}`,
-    lastModified: article.content_updated_at || article.published_at || undefined,
+  const hasRenamedArticle = articles.some(article => article.slug === legacyArticleSlug);
+  const articlePages: MetadataRoute.Sitemap = articles.filter(article => !hasRenamedArticle || article.slug !== "n").map((article) => ({
+    url: siteUrl + articlePath(article.slug),
+    lastModified: article.content_updated_at || article.updated_at || article.published_at || undefined,
     changeFrequency: "weekly",
     priority: 0.8,
   }));

@@ -20,7 +20,6 @@ const accounts = [
   ["Top Tier South Carolina","toptierusc"],
   ["Top Tier Michigan","toptieruofm"],
   ["Top Tier Texas A&M","toptiertexasam"],
-  ["Top Tier Jacksonville St","toptiercocks"],
   ["Top Tier BYU","toptiercougs"],
   ["Top Tier Clemson","TopTierCU"],
   ["Top Tier Nebraska","TopTierHuskers"],

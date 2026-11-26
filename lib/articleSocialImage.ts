@@ -1,8 +1,7 @@
 import { createHash } from "node:crypto";
+import { articlePath } from "./articlePaths";
 
-export const siteUrl = (
-  process.env.NEXT_PUBLIC_SITE_URL || "https://www.toptierstate.net"
-).replace(/\/$/, "");
+export const siteUrl = "https://www.toptierstate.net";
 
 export function getArticleImage(article: { cover_image_url?: string | null; body?: unknown }) {
   const body = article.body;
@@ -30,7 +29,7 @@ export function getSocialImageUrl(slug: string, image: string) {
 
 export function getXShareArticleUrl(slug: string, image: string) {
   const version = new URL(getSocialImageUrl(slug, image)).searchParams.get("v")!;
-  const url = new URL(`/articles/${encodeURIComponent(slug)}`, siteUrl);
+  const url = new URL(articlePath(slug), siteUrl);
   url.searchParams.set("x_preview", version);
   return url.toString();
 }

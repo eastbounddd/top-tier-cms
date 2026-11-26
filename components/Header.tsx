@@ -1,31 +1,27 @@
-"use client";
-
-import Image from "next/image";
 import Link from "next/link";
-import { useState } from "react";
 
-export function Header() {
-  const [menuOpen, setMenuOpen] = useState(false);
+const links = [
+  ["/articles", "Latest"], ["/college-football", "College Football"],
+  ["/college-football#live-boards", "Boards"], ["/schools", "Schools"],
+  ["/recruiting", "Recruiting"], ["/writers", "Writers"],
+] as const;
 
+export function Header({ breaking = { href: "/college-football", text: "College football news and analysis" } }: {
+  breaking?: { href: string; text: string };
+}) {
+  const navigation = links.map(([href, label]) => <Link key={href} href={href}>{label}</Link>);
   return <>
-    <div className="breaking"><b>BREAKING</b><span>TOP TIER — COLLEGE FOOTBALL NEWS, ANALYSIS AND ORIGINAL REPORTING</span><i>● LIVE</i></div>
-    <header className="header shell">
-      <Link href="/" className="brand"><Image src="/top-tier-logo-optimized.webp" alt="Top Tier" width={74} height={74} priority /></Link>
-      <nav className="primary-nav" aria-label="Main navigation"><Link href="/#top-stories">Top Stories</Link><Link href="/schools">Schools</Link><Link href="/#college-football">College Football</Link><Link href="/college-basketball">College Basketball</Link><Link href="/#other-news">Other News</Link><Link href="/articles">All Articles</Link><Link href="/recruiting">Recruiting</Link><Link href="/writers">Writers</Link><Link href="/newsletter">Newsletter</Link></nav>
-      <button className="mobile-menu-button" type="button" aria-label="Open navigation menu" aria-expanded={menuOpen} aria-controls="mobile-navigation" onClick={() => setMenuOpen((open) => !open)}>
-        <span /><span /><span />
-      </button>
-      {menuOpen && <nav id="mobile-navigation" className="mobile-menu" aria-label="Mobile navigation">
-        <Link href="/#top-stories" onClick={() => setMenuOpen(false)}>Top Stories</Link>
-        <Link href="/schools" onClick={() => setMenuOpen(false)}>Schools</Link>
-        <Link href="/#college-football" onClick={() => setMenuOpen(false)}>College Football</Link>
-        <Link href="/college-basketball" onClick={() => setMenuOpen(false)}>College Basketball</Link>
-        <Link href="/#other-news" onClick={() => setMenuOpen(false)}>Other News</Link>
-        <Link href="/articles" onClick={() => setMenuOpen(false)}>All Articles</Link>
-        <Link href="/recruiting" onClick={() => setMenuOpen(false)}>Recruiting</Link>
-        <Link href="/writers" onClick={() => setMenuOpen(false)}>Writers</Link>
-        <Link href="/newsletter" onClick={() => setMenuOpen(false)}>Newsletter</Link>
-      </nav>}
+    <header className="editorial-header">
+      <div className="shell editorial-nav">
+        <Link href="/" className="editorial-brand"><span aria-hidden="true">TT</span>Top Tier</Link>
+        <nav className="editorial-desktop-nav" aria-label="Main navigation">{navigation}</nav>
+        <Link className="editorial-subscribe" href="/#newsletter">Subscribe</Link>
+        <details className="editorial-mobile-nav">
+          <summary aria-label="Navigation menu"><span aria-hidden="true">☰</span></summary>
+          <nav aria-label="Mobile navigation">{navigation}</nav>
+        </details>
+      </div>
     </header>
+    <div className="editorial-breaking"><div className="shell"><strong>Breaking</strong><Link href={breaking.href}>{breaking.text}</Link></div></div>
   </>;
 }
