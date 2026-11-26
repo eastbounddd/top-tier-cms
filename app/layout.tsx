@@ -2,6 +2,7 @@ import localFont from "next/font/local";
 import { schemaJson } from "@/lib/structuredData";
 import type { Metadata } from "next";
 import Script from "next/script";
+import { Analytics } from "@vercel/analytics/next";
 import "./globals.css";
 import "./social-polish.css";
 
@@ -37,7 +38,7 @@ gtag('js', new Date());
 gtag('config', 'G-EC1F990094');`}
         </Script>
       </head>
-      <body><a className="skip-link" href="#main-content">Skip to main content</a>{children}<script type="application/ld+json" dangerouslySetInnerHTML={{__html:schemaJson({"@context":"https://schema.org","@graph":[{"@type":"Organization","@id":"https://www.toptierstate.net/#organization",name:"Top Tier",url:"https://www.toptierstate.net",logo:{"@type":"ImageObject",url:"https://www.toptierstate.net/top-tier-logo-optimized.webp",width:384,height:384},sameAs:["https://x.com/TopTierStateX"]},{"@type":"WebSite",name:"Top Tier",url:"https://www.toptierstate.net",publisher:{"@id":"https://www.toptierstate.net/#organization"}}]})}}/></body>
+      <body><a className="skip-link" href="#main-content">Skip to main content</a>{children}<script type="application/ld+json" dangerouslySetInnerHTML={{__html:schemaJson({"@context":"https://schema.org","@graph":[{"@type":"Organization","@id":"https://www.toptierstate.net/#organization",name:"Top Tier",url:"https://www.toptierstate.net",logo:{"@type":"ImageObject",url:"https://www.toptierstate.net/top-tier-logo-optimized.webp",width:384,height:384},sameAs:["https://x.com/TopTierStateX"]},{"@type":"WebSite",name:"Top Tier",url:"https://www.toptierstate.net",publisher:{"@id":"https://www.toptierstate.net/#organization"}}]})}}/><Analytics /></body>
     </html>
   );
 }
