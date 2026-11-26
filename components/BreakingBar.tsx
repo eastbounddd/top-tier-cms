@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Fragment } from "react";
 import { articlePath, breakingStories } from "@/lib/editorial";
 import { BreakingViewport } from "@/components/BreakingViewport";
 
@@ -9,12 +10,12 @@ export async function BreakingBar() {
     : [{ href: "/college-football", title: "College football news and analysis" }];
   const loop = headlines.length >= 5;
 
-  const track = (clone = false) => <ul className={clone ? "breaking-headlines breaking-clone" : "breaking-headlines"} aria-hidden={clone || undefined}>
-    {headlines.map(({ href, title }) => <li key={href}>
+  const track = (clone = false) => <div className={clone ? "breaking-headlines breaking-clone" : "breaking-headlines"} aria-hidden={clone || undefined}>
+    {headlines.map(({ href, title }) => <Fragment key={href}>
       <Link href={href} prefetch={false} tabIndex={clone ? -1 : undefined}>{title}</Link>
       <span aria-hidden="true">·</span>
-    </li>)}
-  </ul>;
+    </Fragment>)}
+  </div>;
 
   return <div className="editorial-breaking">
     <div className="shell">

@@ -2,33 +2,33 @@ import { existsSync } from "node:fs";
 import { join } from "node:path";
 import type { CSSProperties } from "react";
 
-type SchoolColors = { primary: string; secondary: string; abbr: string; dark?: string; banner?: string; followInk?: string; logoSrc?: string };
+type SchoolColors = { primary: string; secondary: string; abbr: string; dark?: string; banner?: string; whiteBannerText?: boolean; followInk?: string; logoSrc?: string };
 
 export const SCHOOL_COLORS: Record<string, SchoolColors> = {
-  alabama: { primary: "#9E1B32", secondary: "#FFFFFF", banner: "#FFFFFF", abbr: "ALA" },
-  arkansas: { primary: "#9D2235", secondary: "#FFFFFF", banner: "#FFFFFF", abbr: "ARK" },
+  alabama: { primary: "#9E1B32", secondary: "#FFFFFF", whiteBannerText: true, abbr: "ALA" },
+  arkansas: { primary: "#9D2235", secondary: "#FFFFFF", whiteBannerText: true, abbr: "ARK" },
   auburn: { primary: "#0C2340", secondary: "#E87722", followInk: "#0C2340", abbr: "AUB" },
   baylor: { primary: "#154734", secondary: "#FFB81C", banner: "#FFB81C", abbr: "BU" },
-  byu: { primary: "#002E5D", secondary: "#FFFFFF", banner: "#FFFFFF", abbr: "BYU" },
+  byu: { primary: "#0047BA", secondary: "#FFFFFF", whiteBannerText: true, abbr: "BYU" },
   clemson: { primary: "#F66733", secondary: "#522D80", dark: "#522D80", abbr: "CLEM" },
   fsu: { primary: "#782F40", secondary: "#CEB888", banner: "#CEB888", abbr: "FSU" },
   georgia: { primary: "#BA0C2F", secondary: "#000000", abbr: "UGA" },
-  illinois: { primary: "#E84A27", secondary: "#13294B", dark: "#13294B", abbr: "ILL" },
-  kansas: { primary: "#0051BA", secondary: "#E8000D", banner: "#FFFFFF", abbr: "KU" },
-  kentucky: { primary: "#0033A0", secondary: "#FFFFFF", banner: "#FFFFFF", abbr: "UK" },
-  marshall: { primary: "#00B140", secondary: "#FFFFFF", dark: "#005F28", banner: "#FFFFFF", abbr: "MU" },
+  illinois: { primary: "#FF5F05", secondary: "#13294B", dark: "#13294B", banner: "#13294B", whiteBannerText: true, abbr: "ILL" },
+  kansas: { primary: "#0051BA", secondary: "#E8000D", whiteBannerText: true, abbr: "KU" },
+  kentucky: { primary: "#0033A0", secondary: "#FFFFFF", whiteBannerText: true, abbr: "UK" },
+  marshall: { primary: "#00B140", secondary: "#FFFFFF", dark: "#005F28", whiteBannerText: true, abbr: "MU" },
   michigan: { primary: "#00274C", secondary: "#FFCB05", abbr: "UM" },
-  "mississippi-state": { primary: "#5D1727", secondary: "#FFFFFF", banner: "#FFFFFF", abbr: "MSU" },
+  "mississippi-state": { primary: "#660000", secondary: "#FFFFFF", whiteBannerText: true, abbr: "MSU" },
   missouri: { primary: "#000000", secondary: "#F1B82D", banner: "#F1B82D", abbr: "MIZ" },
   nebraska: { primary: "#E41C38", secondary: "#F5F1E7", dark: "#B30E2A", banner: "#F5F1E7", abbr: "NEB" },
   "notre-dame": { primary: "#0C2340", secondary: "#C99700", banner: "#C99700", abbr: "ND" },
   oklahoma: { primary: "#841617", secondary: "#FFF4D8", banner: "#FFF4D8", abbr: "OU" },
-  "oregon-state": { primary: "#DC4405", secondary: "#000000", dark: "#000000", banner: "#FFFFFF", abbr: "OSU" },
+  "oregon-state": { primary: "#DC4405", secondary: "#000000", dark: "#000000", whiteBannerText: true, abbr: "OSU" },
   tennessee: { primary: "#FF8200", secondary: "#FFFFFF", dark: "#8A4100", banner: "#111111", abbr: "TENN" },
-  tulane: { primary: "#006747", secondary: "#43B3AE", banner: "#FFFFFF", abbr: "TU" },
-  utah: { primary: "#CC0000", secondary: "#000000", banner: "#FFFFFF", abbr: "UTAH" },
+  tulane: { primary: "#006747", secondary: "#43B3AE", whiteBannerText: true, abbr: "TU" },
+  utah: { primary: "#CC0000", secondary: "#000000", whiteBannerText: true, abbr: "UTAH" },
   vanderbilt: { primary: "#1C1C1C", secondary: "#CFAE70", abbr: "VU" },
-  "virginia-tech": { primary: "#630031", secondary: "#CF4420", banner: "#FFFFFF", abbr: "VT" },
+  "virginia-tech": { primary: "#630031", secondary: "#CF4420", whiteBannerText: true, abbr: "VT" },
   lsu: { primary: "#461D7C", secondary: "#FDD023", followInk: "#2E1065", abbr: "LSU" },
   texas: { primary: "#BF5700", secondary: "#FFFFFF", dark: "#9D4500", abbr: "TEX" },
 };
@@ -47,25 +47,33 @@ const contrast = (a: string, b: string) => {
 };
 
 export function schoolTheme(slug?: string): CSSProperties {
-  const { primary, secondary, dark, banner, followInk: preferredFollowInk } = schoolColors(slug);
+  const { primary, secondary, dark, banner, whiteBannerText, followInk: preferredFollowInk } = schoolColors(slug);
   const ink = dark ?? primary;
   const tint = contrast(secondary, ink) >= 4.5 ? secondary : "#FFFFFF";
   const pillInk = contrast(secondary, "#111111") >= 4.5 ? "#111111" : "#FFFFFF";
   const badgeInk = contrast(secondary, primary) >= 4.5 ? secondary :
     contrast("#FFFFFF", primary) >= 4.5 ? "#FFFFFF" : "#111111";
-  const bannerFill = banner ?? ink;
-  const bannerText = contrast("#FFFFFF", bannerFill) >= 4.5 ? "#FFFFFF" :
+  const bannerFill = banner ?? (whiteBannerText ? primary : ink);
+  const whiteContrast = contrast("#FFFFFF", bannerFill);
+  const bannerText = whiteBannerText || whiteContrast >= 4.5 ? "#FFFFFF" :
     contrast(ink, bannerFill) >= 4.5 ? ink : "#111111";
-  const bannerMuted = contrast(secondary, bannerFill) >= 4.5 ? secondary : bannerText;
-  const followFill = contrast(secondary, bannerFill) < 2 ? bannerText : secondary;
-  const followInk = followFill === secondary ? preferredFollowInk ?? pillInk : bannerFill;
+  const bannerMuted = !whiteBannerText && contrast(secondary, bannerFill) >= 4.5 ? secondary : bannerText;
+  const textBackdrop = whiteBannerText && whiteContrast < 4.5 ? dark ?? "#111111" : undefined;
+  const followFill = whiteBannerText ? textBackdrop ?? "#111111" : contrast(secondary, bannerFill) < 2 ? bannerText : secondary;
+  const followInk = whiteBannerText ? "#FFFFFF" : followFill === secondary ? preferredFollowInk ?? pillInk : bannerFill;
   return {
     "--school-primary": primary, "--school-secondary": secondary, "--school-ink": ink,
     "--school-tint": tint, "--school-pill-ink": pillInk, "--school-badge-ink": badgeInk,
     "--school-banner-fill": bannerFill, "--school-banner-text": bannerText, "--school-banner-muted": bannerMuted,
     "--school-banner-stripe": banner && banner !== primary ? primary : secondary,
     "--school-follow-fill": followFill, "--school-follow-ink": followInk,
+    ...(textBackdrop ? { "--school-banner-text-bg": textBackdrop } : {}),
   } as CSSProperties;
+}
+
+export function schoolBannerLogo(slug: string) {
+  const path = `/images/schools/banner/${slug}.webp`;
+  return existsSync(join(process.cwd(), "public", path)) ? path : schoolLogo(slug);
 }
 
 export function schoolLogo(slug: string) {

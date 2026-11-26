@@ -6,7 +6,7 @@ import { XAccountLink } from "@/components/XAccountLink";
 import { SchoolBeatAvatar } from "@/components/SchoolBeatAvatar";
 import { articlePath, boards, editorialDate, itemList, schoolByName } from "@/lib/editorial";
 import { schools, type SchoolBeat } from "@/lib/schools";
-import { schoolColors, schoolLogo, schoolTheme, schoolXAvatar } from "@/lib/schoolColors";
+import { schoolBannerLogo, schoolColors, schoolLogo, schoolTheme, schoolXAvatar } from "@/lib/schoolColors";
 import { schemaJson } from "@/lib/structuredData";
 import { writerImage, type Writer } from "@/lib/writers";
 
@@ -48,7 +48,7 @@ export function QuickJump({ ranks }: { ranks: { anchor: string; number: number; 
 export function SchoolBadge({ school, size, alt = "" }: {
   school: SchoolBeat; size: 28 | 44; alt?: string;
 }) {
-  const logo = schoolLogo(school.slug);
+  const logo = size === 44 ? schoolBannerLogo(school.slug) : schoolLogo(school.slug);
   return <span className={`school-badge badge-${size}${logo ? " school-badge-logo" : ""}`} aria-hidden={logo && alt ? undefined : true}>
     {logo ? <Image src={logo} alt={alt} width={size} height={size} unoptimized /> : schoolColors(school.slug).abbr}
   </span>;

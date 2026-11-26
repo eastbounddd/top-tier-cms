@@ -19,17 +19,17 @@ html{--font-barlow:var(--font-display);--font-inter:var(--font-sans)}
 .editorial-subscribe{margin-left:auto;padding:9px 15px;background:var(--tt-red);color:#fff;font-size:14px;font-weight:700;letter-spacing:.06em}
 .editorial-subscribe:hover{background:var(--tt-hover)}
 .editorial-mobile-nav{display:none}
-.editorial-breaking{--ticker-font-size:13px;background:var(--tt-red);color:#fff;-webkit-text-size-adjust:100%;text-size-adjust:100%}
+html,body,.editorial-breaking,.breaking-track,.breaking-headlines,.breaking-headlines a{-webkit-text-size-adjust:100%;text-size-adjust:100%}
+.editorial-breaking{--ticker-font-size:13px;background:var(--tt-red);color:#fff}
 .editorial-breaking .shell{display:flex;align-items:stretch;min-height:34px}
 .breaking-label{display:flex;align-items:center;position:relative;z-index:1;flex:none;background:var(--tt-red);padding-right:10px}
 .breaking-label strong{background:var(--tt-black);padding:2px 7px;font-size:13px;letter-spacing:.05em}
 .breaking-viewport{min-width:0;flex:1;overflow:hidden;touch-action:pan-y}
 .breaking-track{display:flex;width:max-content;min-height:34px}
 .breaking-loop{animation:breaking-marquee 55s linear infinite}
-.breaking-headlines{display:flex;align-items:center;list-style:none;flex:none;margin:0;padding:0}
-.breaking-headlines :is(li,a,span){font:600 var(--ticker-font-size)/1.2 var(--font-sans),sans-serif;white-space:nowrap}
-.breaking-headlines li{display:flex;align-items:center;white-space:nowrap}
-.breaking-headlines a{padding:8px 4px}
+.breaking-headlines{display:flex;align-items:center;flex:none;margin:0;padding:0}
+.breaking-headlines :is(a,span){font:600 var(--ticker-font-size)/1.2 var(--font-sans),sans-serif;white-space:nowrap;flex-shrink:0}
+.breaking-headlines a{display:inline-flex;align-items:center;padding:8px 4px}
 .breaking-headlines a:hover,.breaking-headlines a:focus-visible{text-decoration:underline;text-underline-offset:3px}
 .breaking-headlines span{padding-inline:10px;color:#fbd6d7}
 .editorial-breaking:is(:hover,:active,:focus-within) .breaking-loop{animation-play-state:paused}
@@ -147,6 +147,7 @@ body:has(.editorial){background:var(--tt-paper);color:#18181b}
 .school-banner-identity .school-badge-logo{padding:0}
 .school-banner h1{margin:0;font-size:28px;letter-spacing:.04em}
 .school-banner p{margin:3px 0 0;color:var(--school-banner-muted);font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase}
+.school-banner :is(h1,p,.school-banner-social>span){background-color:var(--school-banner-text-bg,transparent);box-shadow:0 0 0 2px var(--school-banner-text-bg,transparent);width:fit-content}
 .school-banner-social{display:flex;flex-direction:column;align-items:flex-end;gap:6px;margin-left:auto;padding-bottom:10px}
 .school-banner-social>span{color:var(--school-banner-muted);font-size:11px;font-weight:600}
 .school-follow-pill,.beat-follow{display:inline-flex;align-items:center;justify-content:center;gap:7px;font-weight:700}
