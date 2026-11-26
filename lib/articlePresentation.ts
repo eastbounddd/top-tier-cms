@@ -7,6 +7,12 @@ function plainText(html: string) {
     .replace(/\s+/g, " ").trim();
 }
 
+function textBlocks(html: string) {
+  return [...html.matchAll(/<(p|div|li)\b[^>]*>((?:(?!<\/?(?:p|div|li)\b)[\s\S])*?)<\/\1>/gi)]
+    .map(match => ({ text: plainText(match[2]), listItem: match[1].toLowerCase() === "li" }))
+    .filter(block => block.text);
+}
+
 export function articlePresentation(html: string, excerpt?: string | null) {
   const matches = [...html.matchAll(headings)];
   const ranked = matches.flatMap(match => {
@@ -22,10 +28,18 @@ export function articlePresentation(html: string, excerpt?: string | null) {
   const quickAnswer = excerpt?.trim() || "";
   const firstRank = ranks[0]?.match.index;
   const intro = html.slice(0, firstRank ?? matches[0]?.index ?? html.length);
-  const paragraphs = [...intro.matchAll(/<p\b[^>]*>([\s\S]*?)<\/p>/gi)].map(match => plainText(match[1]));
-  const methodology = paragraphs.find(text => /\b(?:criteria|rank(?:ed|ing)?|methodology|based on|evaluat)\b/i.test(text));
-  const nuggets = [...html.matchAll(/<p\b[^>]*>([\s\S]*?)<\/p>/gi)]
-    .map(match => plainText(match[1]).match(/^.+?[.!?](?=\s+[A-Z]|$)/)?.[0] ?? plainText(match[1]));
+  const blocks = textBlocks(intro);
+  const paragraphs = blocks.map(block => block.text);
+  const criteriaLead = paragraphs.findIndex(text => /(?:criteria|methodology|went into the order|how we ranked).*:\s*$/i.test(text));
+  const criteria = [];
+  if (criteriaLead >= 0) {
+    for (const block of blocks.slice(criteriaLead + 1, criteriaLead + 5)) {
+      if (!block.listItem && !/^[-–—•]\s+/.test(block.text)) break;
+      criteria.push(block.text.replace(/^[-–—•]\s+/, ""));
+    }
+  }
+  const methodology = paragraphs.find(text => /\b(?:ranked by|ranking is based on|criteria|methodology|evaluated)\b/i.test(text));
+  const nuggets = textBlocks(html).map(({ text }) => text.match(/^.+?[.!?](?=\s+[A-Z]|$)/)?.[0] ?? text);
   const takeaways = [...new Set([quickAnswer, ...paragraphs, ...nuggets].filter(text => text.length > 10 && text.length <= 240))].slice(0, 4);
 
   let body = html;
@@ -41,5 +55,5 @@ export function articlePresentation(html: string, excerpt?: string | null) {
     (_, tag, attrs, content) => `<${tag}${attrs.replace(/\sclass\s*=\s*(?:"[^"]*"|'[^']*'|[^\s>]+)/i, "")} class="rank-stat">${content}</${tag}>`,
   );
 
-  return { body, ranks, methodology: methodology || quickAnswer, takeaways };
+  return { body, ranks, methodology: methodology || quickAnswer, criteria, takeaways };
 }

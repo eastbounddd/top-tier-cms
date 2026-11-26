@@ -98,7 +98,7 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
   if (!data) notFound();
 
   const rawBody = (typeof data.body === "object" ? data.body?.html : data.body) || data.body_html || "";
-  const { body, ranks, methodology, takeaways } = articlePresentation(rawBody, data.excerpt);
+  const { body, ranks, methodology, criteria, takeaways } = articlePresentation(rawBody, data.excerpt);
   const writer = data.writer;
   const author = writer?.name || (typeof data.body === "object" && data.body?.author_name) || data.author_name || "Top Tier";
   const school = schoolByName(data.school);
@@ -163,7 +163,9 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
             {(caption || credit) && <figcaption>{[caption, credit].filter(Boolean).join(" · ")}</figcaption>}
           </figure>}
           {ranks.length > 0 ? <>
-            {methodology && <section className="takeaways"><h2>Ranking Criteria</h2><p>{methodology}</p></section>}
+            {(criteria.length > 0 || methodology) && <section className="takeaways"><h2>Ranking Criteria</h2>
+              {criteria.length > 0 ? <ul>{criteria.map(text => <li key={text}>{text}</li>)}</ul> : <p>{methodology}</p>}
+            </section>}
             <nav className="rank-jumps" aria-label="Jump to rank"><ul>{rankLinks}</ul></nav>
           </> : takeaways.length > 0 && <section className="takeaways">
             <h2>{takeaways.length > 1 ? "Key Takeaways" : "Quick Answer"}</h2>
