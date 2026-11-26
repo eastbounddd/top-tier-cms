@@ -3,7 +3,7 @@ import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { UpcomingGames } from "@/components/UpcomingGames";
 import { EditorialNewsletter, JsonLd, LiveBoards, MoreStories, Story, StoryGrid, TeamGrid, WritersStrip } from "@/components/Editorial";
-import { articlePath, footballCategories, stories, storyList } from "@/lib/editorial";
+import { footballCategories, stories, storyList } from "@/lib/editorial";
 import { pageMetadata } from "@/lib/pageMetadata";
 
 export const revalidate = 60;
@@ -20,7 +20,7 @@ export default async function Home() {
   const moreFootball = [...eligible.filter(article => !used.has(article.id)), ...eligible.filter(article => used.has(article.id))].slice(0, 4);
   const writers = [...new Map(articles.flatMap(article => article.writer ? [[article.writer.id, article.writer] as const] : [])).values()].slice(0, 4);
   return <>
-    <Header breaking={lead ? { href: articlePath(lead.slug), text: lead.title } : undefined} />
+    <Header />
     <main id="main-content" className="editorial shell">
       <h1 className="editorial-kicker">College football news, analysis, and original reporting from Top Tier</h1>
       <div className="newsroom-grid">

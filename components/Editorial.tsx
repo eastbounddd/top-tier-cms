@@ -3,9 +3,10 @@ import Link from "next/link";
 import type { Article } from "@/components/ArticleCard";
 import { NewsletterSignup } from "@/components/NewsletterSignup";
 import { XAccountLink } from "@/components/XAccountLink";
+import { SchoolBeatAvatar } from "@/components/SchoolBeatAvatar";
 import { articlePath, boards, editorialDate, itemList, schoolByName } from "@/lib/editorial";
 import { schools, type SchoolBeat } from "@/lib/schools";
-import { schoolColors, schoolLogo, schoolTheme } from "@/lib/schoolColors";
+import { schoolColors, schoolLogo, schoolTheme, schoolXAvatar } from "@/lib/schoolColors";
 import { schemaJson } from "@/lib/structuredData";
 import { writerImage, type Writer } from "@/lib/writers";
 
@@ -44,10 +45,10 @@ export function QuickJump({ ranks }: { ranks: { anchor: string; number: number; 
   </nav>;
 }
 
-export function SchoolBadge({ school, size, monogram = false, alt = "" }: {
-  school: SchoolBeat; size: 28 | 44 | 42; monogram?: boolean; alt?: string;
+export function SchoolBadge({ school, size, alt = "" }: {
+  school: SchoolBeat; size: 28 | 44; alt?: string;
 }) {
-  const logo = monogram ? undefined : schoolLogo(school.slug);
+  const logo = schoolLogo(school.slug);
   return <span className={`school-badge badge-${size}${logo ? " school-badge-logo" : ""}`} aria-hidden={logo && alt ? undefined : true}>
     {logo ? <Image src={logo} alt={alt} width={size} height={size} unoptimized /> : schoolColors(school.slug).abbr}
   </span>;
@@ -58,7 +59,7 @@ export function SchoolBeatCard({ school, hub = false }: { school: SchoolBeat; hu
   return <section className="rail-card school-beat">
     <h2>{school.xHandle ? `Follow our ${school.name} beat on X` : `${school.name} coverage`}</h2>
     <div className="beat-identity">
-      <SchoolBadge school={school} size={42} monogram />
+      <SchoolBeatAvatar key={school.slug} src={schoolXAvatar(school.slug)} handle={school.xHandle} abbreviation={schoolColors(school.slug).abbr} />
       <div>{school.xHandle && <strong>@{school.xHandle}</strong>}<span>Top Tier {school.name}</span></div>
     </div>
     <p>Breaking news, recruiting, and gameday notes from the {school.name} beat.</p>

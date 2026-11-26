@@ -11,8 +11,8 @@ new Function("exports", source)(exportsStub);
 const { selectCollegeGames } = exportsStub;
 
 const now = Date.parse("2026-11-26T21:00:00Z");
-const home = { homeAway: "home", team: { id: "1", location: "Nebraska", conferenceId: "5" }, score: "14" };
-const away = { homeAway: "away", team: { id: "2", location: "Iowa", conferenceId: "5" }, score: "10" };
+const home = { homeAway: "home", team: { id: "1", location: "Nebraska", conferenceId: "5", logo: "https://a.espncdn.com/i/teamlogos/ncaa/500/158.png" }, score: "14" };
+const away = { homeAway: "away", team: { id: "2", location: "Iowa", conferenceId: "5", logo: "https://example.com/unexpected.png" }, score: "10" };
 const event = (id, state, offset, competitors = [home, away]) => ({
   id, date: new Date(now + offset * 3600000).toISOString(),
   status: { type: { state, completed: state === "post", shortDetail: state === "in" ? "Q3" : "Final" } },
@@ -30,6 +30,8 @@ test("prioritizes live, AP marquee upcoming, then recent marquee finals", () => 
   assert.deepEqual([games[0].home.score, games[0].away.score, games[0].network, games[0].conference], ["14", "10", "CBS", "Big Ten"]);
   assert.equal(games[1].home.rank, 18);
   assert.equal(games[3].home.rank, undefined);
+  assert.equal(games[0].home.logo, home.team.logo);
+  assert.equal(games[0].away.logo, undefined);
 });
 
 test("omits postponed and incomplete games and handles an unavailable feed", () => {

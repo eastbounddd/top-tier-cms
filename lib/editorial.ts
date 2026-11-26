@@ -46,6 +46,14 @@ export async function latestTvGuidePath() {
   return data?.slug ? articlePath(data.slug) : null;
 }
 
+export async function breakingStories() {
+  const { data } = await editorialClient().from("articles").select("slug,title")
+    .eq("status", "published").not("slug", "is", null)
+    .order("published_at", { ascending: false, nullsFirst: false })
+    .order("id", { ascending: false }).limit(8);
+  return (data ?? []).filter(story => story.slug && story.title?.trim()).slice(0, 7);
+}
+
 export function itemList(name: string, items: {name: string; path: string}[]) {
   return { "@context": "https://schema.org", "@type": "ItemList", name, itemListElement: items.map(({ name, path }, index) => ({
     "@type": "ListItem", position: index + 1, name, url: canonicalSite + path,

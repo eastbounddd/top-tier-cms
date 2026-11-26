@@ -2,7 +2,7 @@ const espnFootball = "https://site.api.espn.com/apis/site/v2/sports/football/col
 const powerConferences: Record<string, string> = { "1": "ACC", "4": "Big 12", "5": "Big Ten", "8": "SEC" };
 const day = 86_400_000;
 
-type EspnTeam = { id?: string; location?: string; shortDisplayName?: string; conferenceId?: string };
+type EspnTeam = { id?: string; location?: string; shortDisplayName?: string; conferenceId?: string; logo?: string };
 type EspnCompetitor = { homeAway?: string; team?: EspnTeam; score?: string };
 type EspnEvent = {
   id: string;
@@ -17,7 +17,7 @@ type EspnEvent = {
   }[];
 };
 type RankingPoll = { type?: string; ranks?: { current: number; team?: {id?: string} }[] };
-type Team = { school: string; name: string; rank?: number; score?: string; conference?: string };
+type Team = { school: string; name: string; rank?: number; score?: string; conference?: string; logo?: string };
 export type CollegeGame = {
   id: string;
   date: string;
@@ -62,6 +62,7 @@ export function selectCollegeGames(events: EspnEvent[], polls: RankingPoll[], li
         school: team.location, name: team.shortDisplayName || team.location,
         rank: ap.get(team.id ?? ""), score: competitor?.score,
         conference: powerConferences[team.conferenceId ?? ""],
+        logo: team.logo && /^https:\/\/a\.espncdn\.com\//i.test(team.logo) ? team.logo : undefined,
       };
     };
     const home = teams("home"), away = teams("away");

@@ -74,3 +74,8 @@ export function schoolLogo(slug: string) {
   return ["svg", "png", "webp"].map(ext => `/images/schools/${slug}.${ext}`)
     .find(path => existsSync(join(process.cwd(), "public", path)));
 }
+
+export function schoolXAvatar(slug: string) {
+  const path = `/images/school-x/${slug}.webp`;
+  return existsSync(join(process.cwd(), "public", path)) ? path : undefined;
+}

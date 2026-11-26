@@ -1,6 +1,8 @@
 import Link from "next/link";
+import Image from "next/image";
 import { collegeGames, type CollegeGame } from "@/lib/collegeGames";
 import { latestTvGuidePath, schoolByName } from "@/lib/editorial";
+import { schoolLogo } from "@/lib/schoolColors";
 
 const kickoff = new Intl.DateTimeFormat("en-US", {
   timeZone: "America/Chicago", weekday: "short", month: "short", day: "numeric",
@@ -18,10 +20,18 @@ function GameCard({ game, guide }: { game: CollegeGame; guide: string }) {
       <span>{game.network || "TV TBD"}</span>
     </div>
     <div className="cfb-matchup">
-      {[game.away, game.home].map(team => <div key={team.school}>
-        <strong>{team.rank && <small>#{team.rank} </small>}{team.name}</strong>
-        {game.state !== "upcoming" && team.score != null && <b className="cfb-score">{team.score}</b>}
-      </div>)}
+      {[game.away, game.home].map(team => {
+        const school = schoolByName(team.school);
+        const localLogo = school && schoolLogo(school.slug);
+        const logo = localLogo || team.logo;
+        return <div key={team.school}>
+          <div className="cfb-team">
+            {logo && <Image src={logo} alt={`${team.name} logo`} width={20} height={20} loading="lazy" unoptimized={Boolean(localLogo)} />}
+            <strong>{team.rank && <small>#{team.rank} </small>}{team.name}</strong>
+          </div>
+          {game.state !== "upcoming" && team.score != null && <b className="cfb-score">{team.score}</b>}
+        </div>;
+      })}
     </div>
     <div className="cfb-game-note">{game.conference || "FBS football"}</div>
   </>;
