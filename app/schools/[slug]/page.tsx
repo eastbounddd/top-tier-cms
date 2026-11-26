@@ -17,6 +17,11 @@ export const generateStaticParams = () => schools.map(({ slug }) => ({ slug }));
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
   const school = getSchoolBySlug((await params).slug);
   if (!school) return {};
+  if (school.slug === "lsu") return pageMetadata(
+    "LSU Football & Sports News, Analysis, and Recruiting",
+    "Follow the latest LSU Tigers football and sports news, recruiting updates, analysis, and original reporting from Top Tier.",
+    "/schools/lsu",
+  );
   return pageMetadata(`${school.name} Football News, Analysis & Reporting`, `Follow the latest ${school.name} football news, analysis and original reporting from Top Tier, with updates from across college sports.`, `/schools/${school.slug}`);
 }
 
@@ -32,7 +37,8 @@ export default async function SchoolPage({ params }: { params: Promise<{ slug: s
       <div className="school-banner">
         <div className="school-banner-identity"><SchoolBadge school={school} size={44} /><div><h1>{school.name}</h1><p>School Hub · Football · Recruiting · Basketball</p></div></div>
         {school.xHandle && <div className="school-banner-social">
-          <XAccountLink handle={school.xHandle} className="school-follow-pill" label={`Follow @${school.xHandle}`} />
+          <XAccountLink handle={school.xHandle} className="school-follow-pill" label={`Follow @${school.xHandle}`}
+            compactLabel={school.xHandle.length > 12 ? `@${school.xHandle}` : undefined} />
           <span>{schoolColors(school.slug).abbr} beat</span>
         </div>}
       </div>

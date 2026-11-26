@@ -25,10 +25,10 @@ export const schools: readonly SchoolBeat[] = [
   { name: "Marshall", slug: "marshall", xHandle: "TopTierMarshall" },
   { name: "Notre Dame", slug: "notre-dame", xHandle: "TopTierIrish" },
   { name: "Mississippi State", slug: "mississippi-state", xHandle: "toptiermissst" },
+  { name: "LSU", slug: "lsu", xHandle: "TopTierLSU" },
 ];
 
 export const additionalSchoolBeats: readonly SchoolBeat[] = [
-  { name: "LSU", slug: "lsu", xHandle: "TopTierLSU" },
   { name: "Texas", slug: "texas", xHandle: "TopTierUT" },
 ];
 

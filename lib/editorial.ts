@@ -28,14 +28,21 @@ export async function stories({ school, football, recruiting, category, titleCon
 } = {}): Promise<Article[]> {
   const db = editorialClient();
   let query = db.from("articles").select("id,slug,title,excerpt,cover_image_url,category,school,published_at,is_top_story,writer_profile_id,byline:body->>author_name,author_name").eq("status", "published");
-  if (school) query = query.eq("school", school);
+  if (school === "LSU") {
+    // Legacy LSU coverage predates school tags. Include LSU headlines only when no school is set.
+    query = query.or('school.ilike.lsu,and(or(school.is.null,school.eq.""),title.ilike.%LSU%)');
+  } else if (school) query = query.eq("school", school);
   if (football) query = query.in("category", footballCategories);
   if (category) query = query.eq("category", category);
   if (titleContains) query = query.ilike("title", `%${titleContains}%`);
   if (recruiting) query = query.or("category.eq.Recruiting,school.eq.Recruiting").gte("published_at", new Date(Math.floor(Date.now() / 86400000) * 86400000 - 14 * 86400000).toISOString());
   const { data, error } = await query.order("published_at", { ascending: false }).order("id", { ascending: false }).limit(limit);
   if (error) throw new Error(error.message);
-  return attachWriters(db, (data ?? []).map(row => ({ ...row, body: { author_name: row.byline || row.author_name || undefined } })));
+  return attachWriters(db, (data ?? []).map(row => ({
+    ...row,
+    school: school === "LSU" ? school : row.school,
+    body: { author_name: row.byline || row.author_name || undefined },
+  })));
 }
 
 export async function latestTvGuidePath() {

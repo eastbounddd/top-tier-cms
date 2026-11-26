@@ -1,5 +1,21 @@
 const headings = /<h([23])\b([^>]*)>([\s\S]*?)<\/h\1>/gi;
 
+export function normalizeArticleText(html: string) {
+  return html.replace(/<[a-z][\w:-]*\b(?:[^"'<>]|"[^"]*"|'[^']*')*>/gi, tag =>
+    tag.replace(/\s([^\s"'<>/=]+)(?:\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s"'=<>]+)))?/g,
+      (attribute, key: string, doubleQuoted?: string, singleQuoted?: string, unquoted?: string) => {
+        if (key.toLowerCase() === "color") return "";
+        if (key.toLowerCase() !== "style") return attribute;
+        const value = doubleQuoted ?? singleQuoted ?? unquoted;
+        if (!value) return attribute;
+        const styles = value.replace(/(^|;)\s*(?:color|-webkit-text-fill-color)\s*:[^;]*/gi, "$1")
+          .replace(/^[;\s]+|[;\s]+$/g, "");
+        const quote = singleQuoted !== undefined ? "'" : '"';
+        return styles ? ` style=${quote}${styles}${quote}` : "";
+      }),
+  );
+}
+
 function plainText(html: string) {
   return html.replace(/<[^>]*>/g, " ")
     .replace(/&(?:nbsp|amp|quot|#39|apos|ndash|mdash);/gi, entity =>
@@ -55,5 +71,5 @@ export function articlePresentation(html: string, excerpt?: string | null) {
     (_, tag, attrs, content) => `<${tag}${attrs.replace(/\sclass\s*=\s*(?:"[^"]*"|'[^']*'|[^\s>]+)/i, "")} class="rank-stat">${content}</${tag}>`,
   );
 
-  return { body, ranks, methodology: methodology || quickAnswer, criteria, takeaways };
+  return { body: normalizeArticleText(body), ranks, methodology: methodology || quickAnswer, criteria, takeaways };
 }

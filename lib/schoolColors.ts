@@ -2,12 +2,12 @@ import { existsSync } from "node:fs";
 import { join } from "node:path";
 import type { CSSProperties } from "react";
 
-type SchoolColors = { primary: string; secondary: string; abbr: string; dark?: string; banner?: string; logoSrc?: string };
+type SchoolColors = { primary: string; secondary: string; abbr: string; dark?: string; banner?: string; followInk?: string; logoSrc?: string };
 
 export const SCHOOL_COLORS: Record<string, SchoolColors> = {
   alabama: { primary: "#9E1B32", secondary: "#FFFFFF", banner: "#FFFFFF", abbr: "ALA" },
   arkansas: { primary: "#9D2235", secondary: "#FFFFFF", banner: "#FFFFFF", abbr: "ARK" },
-  auburn: { primary: "#0C2340", secondary: "#E87722", banner: "#E87722", abbr: "AUB" },
+  auburn: { primary: "#0C2340", secondary: "#E87722", followInk: "#0C2340", abbr: "AUB" },
   baylor: { primary: "#154734", secondary: "#FFB81C", banner: "#FFB81C", abbr: "BU" },
   byu: { primary: "#002E5D", secondary: "#FFFFFF", banner: "#FFFFFF", abbr: "BYU" },
   clemson: { primary: "#F66733", secondary: "#522D80", dark: "#522D80", abbr: "CLEM" },
@@ -29,7 +29,7 @@ export const SCHOOL_COLORS: Record<string, SchoolColors> = {
   utah: { primary: "#CC0000", secondary: "#000000", banner: "#FFFFFF", abbr: "UTAH" },
   vanderbilt: { primary: "#1C1C1C", secondary: "#CFAE70", abbr: "VU" },
   "virginia-tech": { primary: "#630031", secondary: "#CF4420", banner: "#FFFFFF", abbr: "VT" },
-  lsu: { primary: "#461D7C", secondary: "#FDD023", abbr: "LSU" },
+  lsu: { primary: "#461D7C", secondary: "#FDD023", followInk: "#2E1065", abbr: "LSU" },
   texas: { primary: "#BF5700", secondary: "#FFFFFF", dark: "#9D4500", abbr: "TEX" },
 };
 
@@ -47,7 +47,7 @@ const contrast = (a: string, b: string) => {
 };
 
 export function schoolTheme(slug?: string): CSSProperties {
-  const { primary, secondary, dark, banner } = schoolColors(slug);
+  const { primary, secondary, dark, banner, followInk: preferredFollowInk } = schoolColors(slug);
   const ink = dark ?? primary;
   const tint = contrast(secondary, ink) >= 4.5 ? secondary : "#FFFFFF";
   const pillInk = contrast(secondary, "#111111") >= 4.5 ? "#111111" : "#FFFFFF";
@@ -58,7 +58,7 @@ export function schoolTheme(slug?: string): CSSProperties {
     contrast(ink, bannerFill) >= 4.5 ? ink : "#111111";
   const bannerMuted = contrast(secondary, bannerFill) >= 4.5 ? secondary : bannerText;
   const followFill = contrast(secondary, bannerFill) < 2 ? bannerText : secondary;
-  const followInk = followFill === secondary ? pillInk : bannerFill;
+  const followInk = followFill === secondary ? preferredFollowInk ?? pillInk : bannerFill;
   return {
     "--school-primary": primary, "--school-secondary": secondary, "--school-ink": ink,
     "--school-tint": tint, "--school-pill-ink": pillInk, "--school-badge-ink": badgeInk,

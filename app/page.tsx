@@ -8,7 +8,14 @@ import { pageMetadata } from "@/lib/pageMetadata";
 
 export const revalidate = 60;
 export const dynamic = "force-static";
-export const metadata = { ...pageMetadata("College Football & Basketball News", "Independent college football and college basketball news, analysis, recruiting updates and original reporting from Top Tier.", "/"), title: { absolute: "Top Tier | College Football & Basketball News" } };
+const headline = "College sports news, analysis, and original reporting from Top Tier";
+const homeMetadata = pageMetadata(headline, "Independent college sports news, analysis, recruiting updates and original reporting from Top Tier.", "/");
+export const metadata = {
+  ...homeMetadata,
+  title: { absolute: headline },
+  openGraph: { ...homeMetadata.openGraph, title: headline },
+  twitter: { ...homeMetadata.twitter, title: headline },
+};
 
 export default async function Home() {
   const [articles, recruiting] = await Promise.all([stories(), stories({ recruiting: true, limit: 5 })]);
@@ -22,7 +29,7 @@ export default async function Home() {
   return <>
     <Header />
     <main id="main-content" className="editorial shell">
-      <h1 className="editorial-kicker">College football news, analysis, and original reporting from Top Tier</h1>
+      <h1 className="editorial-kicker">{headline}</h1>
       <div className="newsroom-grid">
         {lead ? <Story article={lead} lead /> : <p>No stories have been published yet.</p>}
         <aside className="newsroom-rail"><LiveBoards id="live-boards" /><MoreStories title="More College Football" articles={moreFootball} /></aside>
