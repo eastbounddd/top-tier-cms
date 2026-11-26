@@ -1,4 +1,6 @@
 import Link from "next/link";
+import Image from "next/image";
+import { topTierLogo } from "@/lib/brand";
 
 const links = [
   ["/articles", "Latest"], ["/college-football", "College Football"],
@@ -13,7 +15,7 @@ export function Header({ breaking = { href: "/college-football", text: "College 
   return <>
     <header className="editorial-header">
       <div className="shell editorial-nav">
-        <Link href="/" className="editorial-brand"><span aria-hidden="true">TT</span>Top Tier</Link>
+        <Link href="/" className="editorial-brand"><Image {...topTierLogo} alt="Top Tier" sizes="50px" priority /></Link>
         <nav className="editorial-desktop-nav" aria-label="Main navigation">{navigation}</nav>
         <Link className="editorial-subscribe" href="/#newsletter">Subscribe</Link>
         <details className="editorial-mobile-nav">

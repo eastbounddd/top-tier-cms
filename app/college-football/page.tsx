@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
+import { UpcomingGames } from "@/components/UpcomingGames";
 import { EditorialNewsletter, JsonLd, LiveBoards, MoreStories, Story, StoryGrid, TeamGrid } from "@/components/Editorial";
 import { stories, storyList } from "@/lib/editorial";
 import { pageMetadata } from "@/lib/pageMetadata";
@@ -24,6 +25,7 @@ export default async function CollegeFootballPage() {
         {lead ? <Story article={lead} lead /> : <p>No college football stories have been published yet.</p>}
         <aside className="newsroom-rail"><LiveBoards id="live-boards" /><MoreStories title="More College Football" articles={moreFootball} /></aside>
       </div>
+      <UpcomingGames />
       <section className="editorial-section">
         <div className="editorial-heading"><h2>Latest College Football</h2><Link href="/articles">All articles →</Link></div>
         <StoryGrid articles={latest} />

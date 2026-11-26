@@ -30,7 +30,7 @@ export default async function SchoolPage({ params }: { params: Promise<{ slug: s
     <Header />
     <main id="main-content" className="editorial school-hub shell" style={schoolTheme(school.slug)}>
       <div className="school-banner">
-        <div className="school-banner-identity"><SchoolBadge school={school} size={40} /><div><h1>{school.name}</h1><p>School Hub · Football · Recruiting · Basketball</p></div></div>
+        <div className="school-banner-identity"><SchoolBadge school={school} size={44} /><div><h1>{school.name}</h1><p>School Hub · Football · Recruiting · Basketball</p></div></div>
         {school.xHandle && <div className="school-banner-social">
           <XAccountLink handle={school.xHandle} className="school-follow-pill" label={`Follow @${school.xHandle}`} />
           <span>{schoolColors(school.slug).abbr} beat</span>

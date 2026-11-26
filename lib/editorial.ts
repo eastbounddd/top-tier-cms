@@ -38,6 +38,14 @@ export async function stories({ school, football, recruiting, category, titleCon
   return attachWriters(db, (data ?? []).map(row => ({ ...row, body: { author_name: row.byline || row.author_name || undefined } })));
 }
 
+export async function latestTvGuidePath() {
+  const { data } = await editorialClient().from("articles").select("slug")
+    .eq("status", "published")
+    .or("title.ilike.%tv guide%,title.ilike.%tv schedule%,title.ilike.%television schedule%")
+    .order("published_at", { ascending: false }).limit(1).maybeSingle();
+  return data?.slug ? articlePath(data.slug) : null;
+}
+
 export function itemList(name: string, items: {name: string; path: string}[]) {
   return { "@context": "https://schema.org", "@type": "ItemList", name, itemListElement: items.map(({ name, path }, index) => ({
     "@type": "ListItem", position: index + 1, name, url: canonicalSite + path,

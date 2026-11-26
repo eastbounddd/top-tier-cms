@@ -45,7 +45,7 @@ export function QuickJump({ ranks }: { ranks: { anchor: string; number: number; 
 }
 
 export function SchoolBadge({ school, size, monogram = false, alt = "" }: {
-  school: SchoolBeat; size: 28 | 40 | 42; monogram?: boolean; alt?: string;
+  school: SchoolBeat; size: 28 | 44 | 42; monogram?: boolean; alt?: string;
 }) {
   const logo = monogram ? undefined : schoolLogo(school.slug);
   return <span className={`school-badge badge-${size}${logo ? " school-badge-logo" : ""}`} aria-hidden={logo && alt ? undefined : true}>

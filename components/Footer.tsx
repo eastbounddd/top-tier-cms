@@ -1,7 +1,9 @@
 "use client";
 import Link from "next/link";
+import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
 import { NewsletterSignup } from "@/components/NewsletterSignup";
+import { topTierLogo } from "@/lib/brand";
 
 export function Footer({ newsletter = true }: { newsletter?: boolean }) {
   const [modal, setModal] = useState<"advertise" | "story" | null>(null);
@@ -25,7 +27,7 @@ export function Footer({ newsletter = true }: { newsletter?: boolean }) {
   }, [modal]);
   return <>
     <footer className="editorial-footer">{newsletter && <div id="newsletter" className="shell"><NewsletterSignup variant="footer" /></div>}<div className="shell footer-grid">
-      <div><h2>Top Tier Media</h2><a href="https://x.com/TopTierStateX" target="_blank" rel="noopener noreferrer">X</a><a href="https://www.instagram.com/TopTierState">Instagram</a><a href="https://www.tiktok.com/@TopTierState">TikTok</a></div>
+      <div><Link href="/" className="editorial-footer-brand"><Image {...topTierLogo} alt="Top Tier" sizes="70px" /></Link><h2>Top Tier Media</h2><a href="https://x.com/TopTierStateX" target="_blank" rel="noopener noreferrer">X</a><a href="https://www.instagram.com/TopTierState">Instagram</a><a href="https://www.tiktok.com/@TopTierState">TikTok</a></div>
       <div><h2>Live Boards</h2><Link href="/college-football#live-boards">All live boards</Link></div>
       <div><h2>Coverage</h2><Link href="/college-football">College Football</Link><Link href="/college-basketball">College Basketball</Link><Link href="/recruiting">Recruiting</Link><Link href="/schools">Schools</Link></div>
       <div><h2>Company</h2><Link href="/about">About</Link><Link href="/privacy">Privacy Policy</Link><Link href="/terms">Terms of Use</Link><a href="mailto:partners@ttmediaco.net?subject=Advertising%20inquiry" onClick={e => { e.preventDefault(); trigger.current = e.currentTarget; setModal("advertise"); }}>Advertise</a><a href="mailto:partners@ttmediaco.net">Contact</a></div>
