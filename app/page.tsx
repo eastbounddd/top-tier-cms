@@ -1,8 +1,8 @@
 import Link from "next/link";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
-import { EditorialNewsletter, JsonLd, LiveBoards, Story, StoryGrid, TeamGrid, WritersStrip } from "@/components/Editorial";
-import { articlePath, stories, storyList } from "@/lib/editorial";
+import { EditorialNewsletter, JsonLd, LiveBoards, MoreStories, Story, StoryGrid, TeamGrid, WritersStrip } from "@/components/Editorial";
+import { articlePath, footballCategories, stories, storyList } from "@/lib/editorial";
 import { pageMetadata } from "@/lib/pageMetadata";
 
 export const revalidate = 60;
@@ -15,6 +15,8 @@ export default async function Home() {
   const latest = articles.filter(article => article.id !== lead?.id).slice(0, 6);
   const used = new Set([lead?.id, ...latest.map(article => article.id)]);
   const recruits = recruiting.filter(article => !used.has(article.id)).slice(0, 2);
+  const eligible = articles.filter(article => article.id !== lead?.id && footballCategories.includes(article.category));
+  const moreFootball = [...eligible.filter(article => !used.has(article.id)), ...eligible.filter(article => used.has(article.id))].slice(0, 4);
   const writers = [...new Map(articles.flatMap(article => article.writer ? [[article.writer.id, article.writer] as const] : [])).values()].slice(0, 4);
   return <>
     <Header breaking={lead ? { href: articlePath(lead.slug), text: lead.title } : undefined} />
@@ -22,7 +24,7 @@ export default async function Home() {
       <h1 className="editorial-kicker">College football news, analysis, and original reporting from Top Tier</h1>
       <div className="newsroom-grid">
         {lead ? <Story article={lead} lead /> : <p>No stories have been published yet.</p>}
-        <LiveBoards id="live-boards" />
+        <aside className="newsroom-rail"><LiveBoards id="live-boards" /><MoreStories title="More College Football" articles={moreFootball} /></aside>
       </div>
       <TeamGrid />
       <section className="editorial-section">

@@ -38,8 +38,24 @@ export type RenderedArticleSegment =
   | { type: "html"; html: string }
   | { type: "tweet"; url: string; tweetId: string; occurrence: number };
 
+function normalizeXAnchors(html: string) {
+  return html.replace(/<a\b(?:[^"'<>]|"[^"]*"|'[^']*')*>/gi, anchor => {
+    if (!/\shref\s*=\s*(?:"https:\/\/(?:www\.)?x\.com\/[^"]*"|'https:\/\/(?:www\.)?x\.com\/[^']*'|https:\/\/(?:www\.)?x\.com\/[^\s>]+)/i.test(anchor)) return anchor;
+    const attributes = [...anchor.matchAll(/\s(target|rel)\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s>]+))/gi)];
+    const rel = new Set(["noopener", "noreferrer"]);
+    for (const [, key, doubleQuoted, singleQuoted, unquoted] of attributes) {
+      if (key.toLowerCase() !== "rel") continue;
+      for (const token of (doubleQuoted ?? singleQuoted ?? unquoted).toLowerCase().split(/\s+/)) {
+        if (/^[a-z-]+$/.test(token) && token !== "opener") rel.add(token);
+      }
+    }
+    const cleaned = anchor.replace(/\s(?:target|rel)\s*=\s*(?:"[^"]*"|'[^']*'|[^\s>]+)/gi, "");
+    return `${cleaned.slice(0, -1)} target="_blank" rel="${[...rel].join(" ")}">`;
+  });
+}
+
 export function splitRenderedArticle(html: string): RenderedArticleSegment[] {
-  const rendered = renderStandaloneXLinks(html);
+  const rendered = normalizeXAnchors(renderStandaloneXLinks(html));
   const embedPattern = /<div class="x-post-embed" data-x-url="([^"]+)">[\s\S]*?<\/blockquote><\/div>/gi;
   const segments: RenderedArticleSegment[] = [];
   const occurrences = new Map<string, number>();

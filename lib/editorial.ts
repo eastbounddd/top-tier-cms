@@ -14,6 +14,7 @@ export const boards = [
 ];
 
 export const schoolByName = (name?: string | null) => schools.find(school => school.name.toLowerCase() === name?.trim().toLowerCase());
+export const footballCategories = ["College Football", "Breaking News", "Recruiting", "Transfer Portal", "Coaching"];
 
 export function editorialClient() {
   return createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!, {
@@ -22,13 +23,15 @@ export function editorialClient() {
   });
 }
 
-export async function stories({ school, football, recruiting, limit = 24 }: {
-  school?: string; football?: boolean; recruiting?: boolean; limit?: number;
+export async function stories({ school, football, recruiting, category, titleContains, limit = 24 }: {
+  school?: string; football?: boolean; recruiting?: boolean; category?: string; titleContains?: string; limit?: number;
 } = {}): Promise<Article[]> {
   const db = editorialClient();
   let query = db.from("articles").select("id,slug,title,excerpt,cover_image_url,category,school,published_at,is_top_story,writer_profile_id,byline:body->>author_name,author_name").eq("status", "published");
   if (school) query = query.eq("school", school);
-  if (football) query = query.in("category", ["College Football", "Breaking News", "Recruiting", "Transfer Portal", "Coaching"]);
+  if (football) query = query.in("category", footballCategories);
+  if (category) query = query.eq("category", category);
+  if (titleContains) query = query.ilike("title", `%${titleContains}%`);
   if (recruiting) query = query.or("category.eq.Recruiting,school.eq.Recruiting").gte("published_at", new Date(Math.floor(Date.now() / 86400000) * 86400000 - 14 * 86400000).toISOString());
   const { data, error } = await query.order("published_at", { ascending: false }).order("id", { ascending: false }).limit(limit);
   if (error) throw new Error(error.message);

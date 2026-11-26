@@ -2,11 +2,11 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
-import { JsonLd, LiveBoards, Story, StoryGrid } from "@/components/Editorial";
+import { JsonLd, LiveBoards, SchoolBadge, SchoolBeatCard, SchoolStoryList, Story } from "@/components/Editorial";
 import { XAccountLink } from "@/components/XAccountLink";
 import { stories, storyList } from "@/lib/editorial";
 import { pageMetadata } from "@/lib/pageMetadata";
-import { schoolTheme } from "@/lib/schoolColors";
+import { schoolColors, schoolTheme } from "@/lib/schoolColors";
 import { getSchoolBySlug, schools } from "@/lib/schools";
 import { breadcrumbSchema } from "@/lib/structuredData";
 
@@ -28,17 +28,21 @@ export default async function SchoolPage({ params }: { params: Promise<{ slug: s
   const path = `/schools/${school.slug}`;
   return <>
     <Header />
-    <main id="main-content" className="editorial shell" style={schoolTheme(school.slug)}>
-      <nav className="editorial-breadcrumb" aria-label="Breadcrumb"><Link href="/">Home</Link><span aria-hidden="true">/</span><Link href="/schools">Schools</Link><span aria-hidden="true">/</span><span aria-current="page">{school.name}</span></nav>
-      <div className="school-banner"><div><h1>{school.name}</h1><p>Football news, analysis, and original reporting</p></div><XAccountLink handle={school.xHandle} /></div>
-      <div className="newsroom-grid">
-        {lead ? <Story article={lead} lead /> : <p>No {school.name} articles have been published yet.</p>}
-        <LiveBoards />
+    <main id="main-content" className="editorial school-hub shell" style={schoolTheme(school.slug)}>
+      <div className="school-banner">
+        <div className="school-banner-identity"><SchoolBadge school={school} size={40} /><div><h1>{school.name}</h1><p>School Hub · Football · Recruiting · Basketball</p></div></div>
+        {school.xHandle && <div className="school-banner-social">
+          <XAccountLink handle={school.xHandle} className="school-follow-pill" label={`Follow @${school.xHandle}`} />
+          <span>{schoolColors(school.slug).abbr} beat</span>
+        </div>}
       </div>
-      {latest.length > 0 && <section className="editorial-section">
-        <div className="editorial-heading"><h2>Latest {school.name} Stories</h2><Link href="/schools">All schools →</Link></div>
-        <StoryGrid articles={latest} />
-      </section>}
+      <nav className="editorial-breadcrumb school-breadcrumb" aria-label="Breadcrumb"><Link href="/">Home</Link><span aria-hidden="true">›</span><Link href="/schools">Schools</Link><span aria-hidden="true">›</span><span aria-current="page">{school.name}</span></nav>
+      <div className="school-hub-grid">
+        <div>{lead ? <Story article={lead} lead schoolLead /> : <p>No {school.name} articles have been published yet.</p>}
+          {latest.length > 0 && <SchoolStoryList articles={latest} />}
+        </div>
+        <aside className="school-hub-rail"><SchoolBeatCard school={school} /><LiveBoards light /></aside>
+      </div>
     </main>
     <Footer />
     <JsonLd data={[breadcrumbSchema([{ name: "Schools", path: "/schools" }, { name: school.name, path }]), storyList(`${school.name} stories`, articles)]} />

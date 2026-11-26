@@ -10,10 +10,11 @@ import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { RenderedArticleContent } from "@/components/RenderedArticleContent";
 import { ArticleShare } from "@/components/ArticleShare";
-import { EditorialNewsletter, JsonLd, LiveBoards } from "@/components/Editorial";
+import { EditorialNewsletter, JsonLd, LiveBoards, MoreStories, QuickJump, SchoolBeatCard } from "@/components/Editorial";
 import { articlePath, editorialClient, editorialDate, itemList, legacyArticleSlug, schoolByName, stories } from "@/lib/editorial";
 import { articlePresentation } from "@/lib/articlePresentation";
 import { schoolTheme } from "@/lib/schoolColors";
+import { additionalSchoolBeats } from "@/lib/schools";
 import { getArticleImage, getSocialImageUrl, getXShareArticleUrl, siteUrl } from "@/lib/articleSocialImage";
 import { coverWidth, coverHeight } from "@/lib/articleCover";
 
@@ -103,6 +104,7 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
   const author = writer?.name || (typeof data.body === "object" && data.body?.author_name) || data.author_name || "Top Tier";
   const school = schoolByName(data.school);
   const schoolSlug = school?.slug || data.school?.trim().toLowerCase().replace(/\s+/g, "-");
+  const beat = school ?? additionalSchoolBeats.find(entry => entry.slug === schoolSlug);
   const football = { name: "College Football", path: "/college-football" };
   const topic = school ? { name: school.name, path: `/schools/${school.slug}` } :
     data.school === "Recruiting" || data.category === "Recruiting" ? { name: "Recruiting", path: "/recruiting" } :
@@ -118,11 +120,14 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
   const caption = typeof data.body?.cover_caption === "string" ? data.body.cover_caption : "";
   const credit = typeof data.body?.cover_credit === "string" ? data.body.cover_credit : "";
 
-  const [schoolStories, generalStories] = await Promise.all([
-    school ? stories({ school: school.name, limit: 4 }) : Promise.resolve([]),
+  const heisman = /\bheisman\b/i.test(data.title);
+  const [topicStories, generalStories] = await Promise.all([
+    heisman ? stories({ titleContains: "Heisman", limit: 4 }) :
+      beat ? stories({ school: beat.name, limit: 4 }) : stories({ category: data.category, limit: 4 }),
     stories({ football: data.category !== "College Basketball", limit: 8 }),
   ]);
-  const related = [...new Map([...schoolStories, ...generalStories].filter(story => story.id !== data.id).map(story => [story.id, story])).values()].slice(0, 3);
+  const related = [...new Map([...topicStories, ...generalStories].filter(story => story.id !== data.id).map(story => [story.id, story])).values()].slice(0, 3);
+  const relatedTitle = heisman ? "More Heisman & CFB" : `More ${beat?.name || data.category || "Stories"}`;
   const organization = { "@id": `${siteUrl}/#organization` };
   const news = {
     "@context": "https://schema.org", "@type": "NewsArticle",
@@ -175,12 +180,9 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
           {writer && <WriterCard writer={writer} />}
         </article>
         <aside className="editorial-rail">
-          {school && <Link className="school-rail-link" href={topic.path}>More {school.name} coverage →</Link>}
-          {ranks.length > 0 && <nav className="rail-card rank-rail" aria-label="Ranking contents"><h2>In This Ranking</h2><ol>{rankLinks}</ol></nav>}
+          {ranks.length > 0 ? <QuickJump ranks={ranks} /> : beat && <SchoolBeatCard school={beat} hub={Boolean(school)} />}
           <LiveBoards />
-          {related.length > 0 && <section className="rail-card"><h2>Related Stories</h2><ul>{related.map(story =>
-            <li key={story.id}><Link href={articlePath(story.slug)}>{story.title}</Link></li>
-          )}</ul></section>}
+          <MoreStories title={relatedTitle} articles={related} />
         </aside>
       </div>
       <EditorialNewsletter />

@@ -3,6 +3,7 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   trailingSlash: false,
   expireTime: 360,
+  outputFileTracingIncludes: { "/*": ["./public/images/schools/**/*"] },
   async redirects() {
     return [
       {

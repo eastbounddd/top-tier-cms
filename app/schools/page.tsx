@@ -21,13 +21,13 @@ export default function SchoolsPage() {
           <article key={school.slug} className="school-link-card">
             <Link href={`/schools/${school.slug}`} className="school-card-logo">
               <img
-                src={`/api/x-avatar?handle=${encodeURIComponent(school.xHandle)}`}
-                alt={`${school.name} X account logo`}
+                src={school.xHandle ? `/api/x-avatar?handle=${encodeURIComponent(school.xHandle)}` : "/top-tier-logo-optimized.webp"}
+                alt={school.xHandle ? `${school.name} X account logo` : "Top Tier"}
               />
             </Link>
             <div className="school-card-meta">
               <span>School Coverage</span>
-              <XAccountLink handle={school.xHandle} />
+              {school.xHandle && <XAccountLink handle={school.xHandle} />}
             </div>
             <Link href={`/schools/${school.slug}`} className="school-card-copy">
               <h2>{school.name}</h2>

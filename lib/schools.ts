@@ -1,12 +1,14 @@
-export const schools = [
+export type SchoolBeat = { name: string; slug: string; xHandle?: string };
+
+export const schools: readonly SchoolBeat[] = [
   { name: "Auburn", slug: "auburn", xHandle: "toptierauburn" },
   { name: "Arkansas", slug: "arkansas", xHandle: "toptierarkansas" },
   { name: "Utah", slug: "utah", xHandle: "toptierutes" },
-  { name: "Florida State", slug: "fsu", xHandle: "toptiernoles" },
+  { name: "Florida State", slug: "fsu", xHandle: "TopTierNoles" },
   { name: "Michigan", slug: "michigan", xHandle: "toptieruofm" },
   { name: "Tulane", slug: "tulane", xHandle: "toptiertulane" },
   { name: "Georgia", slug: "georgia", xHandle: "toptieruga" },
-  { name: "Baylor", slug: "baylor", xHandle: "toptierbaylor" },
+  { name: "Baylor", slug: "baylor", xHandle: "TopTierBaylor" },
   { name: "Vanderbilt", slug: "vanderbilt", xHandle: "toptiervandy" },
   { name: "Oklahoma", slug: "oklahoma", xHandle: "TopTierOklahoma" },
   { name: "Kansas", slug: "kansas", xHandle: "TopTierKansas" },
@@ -23,7 +25,12 @@ export const schools = [
   { name: "Marshall", slug: "marshall", xHandle: "TopTierMarshall" },
   { name: "Notre Dame", slug: "notre-dame", xHandle: "TopTierIrish" },
   { name: "Mississippi State", slug: "mississippi-state", xHandle: "toptiermissst" },
-] as const;
+];
+
+export const additionalSchoolBeats: readonly SchoolBeat[] = [
+  { name: "LSU", slug: "lsu", xHandle: "TopTierLSU" },
+  { name: "Texas", slug: "texas", xHandle: "TopTierUT" },
+];
 
 export const articleSchoolOptions = [
   ...schools.map(({ name, slug }) => ({ name, slug })),
