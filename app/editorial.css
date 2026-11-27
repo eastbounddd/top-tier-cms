@@ -145,7 +145,6 @@ body:has(.editorial){background:var(--tt-paper);color:#18181b}
 .school-banner-identity{display:flex;align-items:center;gap:12px;padding-bottom:12px}
 .school-banner-identity .badge-44:not(.school-badge-logo){background:var(--school-follow-fill);color:var(--school-follow-ink)}
 .school-banner-identity .school-badge-logo{padding:0}
-.school-banner-identity .school-badge-on-white{background:#fff;padding:4px}
 .school-banner h1{margin:0;font-size:28px;letter-spacing:.04em}
 .school-banner p{margin:3px 0 0;color:var(--school-banner-muted);font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase}
 .school-banner :is(h1,p,.school-banner-social>span){background:transparent;box-shadow:none;text-shadow:var(--school-banner-shadow,none);width:fit-content}

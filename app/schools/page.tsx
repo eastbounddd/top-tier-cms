@@ -6,14 +6,14 @@ import { Header } from "@/components/Header";
 import { XAccountLink } from "@/components/XAccountLink";
 import { pageMetadata } from "@/lib/pageMetadata";
 import { schoolTheme } from "@/lib/schoolColors";
-import { schools } from "@/lib/schools";
+import { schools, schoolsAlphabetical } from "@/lib/schools";
 
 export const dynamic = "force-static";
 export const revalidate = 60;
 export const metadata = pageMetadata("College Football Schools", `${schools.length} Top Tier school hubs for team news, recruiting and original reporting.`, "/schools");
 
 export default function SchoolsPage() {
-  const entries = [...schools].sort((a,b) => a.name.localeCompare(b.name)).map(school => {
+  const entries = schoolsAlphabetical.map(school => {
     const handle = school.xHandle;
     return { id: school.slug, searchable: `${school.name} ${school.slug} ${school.brand?.shortName ?? ""} ${school.brand?.mascot ?? ""} ${handle ? "@" + handle : ""}`, filters: [school.conference, ...(["AAC", "Mountain West", "Sun Belt"].includes(school.conference) ? ["Group of 5"] : [])],
       card: <article className="directory-card school-directory-card" style={schoolTheme(school.slug)}>

@@ -763,7 +763,7 @@ const deleteArticle = async () => {
   const selectSchool = (name: string, value: string, change: (value: string) => void) => <label>{name}
     <select value={value} onChange={event => change(event.target.value)}>
       <option value="">No school</option>
-      {articleSchoolOptions.map(school => <option key={school.slug} value={school.name}>{school.name}</option>)}
+      {articleSchoolOptions(value).map(school => <option key={school.name} value={school.name}>{school.name}</option>)}
     </select>
   </label>;
   const previewImage = coverPreview || form.cover_image_url;

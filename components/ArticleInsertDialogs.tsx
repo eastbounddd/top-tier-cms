@@ -1,7 +1,7 @@
 ﻿"use client";
 
 import { useEffect, useState } from "react";
-import { schools } from "@/lib/schools";
+import { schools, schoolsAlphabetical } from "@/lib/schools";
 import { followPromo, safeArticleUrl, type Promo } from "@/lib/articleBlocks";
 
 export type SearchResult = { title: string; url: string; image?: string };
@@ -25,7 +25,7 @@ export function ArticlePicker({ context, onChoose, onClose }: {
     }, 250);
     return () => { clearTimeout(timer); abort.abort(); };
   }, [query]);
-  const hubs = context === "link" && query.trim().length >= 2 ? schools.filter(school =>
+  const hubs = context === "link" && query.trim().length >= 2 ? schoolsAlphabetical.filter(school =>
     school.name.toLowerCase().includes(query.trim().toLowerCase())).map(school => ({
       title: school.name + " School Hub", url: "/schools/" + school.slug,
     })) : [];

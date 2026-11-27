@@ -73,19 +73,19 @@ const newSchools: readonly School[] = [
   { name: "TCU", slug: "tcu", conference: "Big 12", brand: { shortName: "TCU", mascot: "Horned Frogs", primary: "#4D1979", secondary: "#A3A9AC", espnId: 2628 } },
   { name: "Colorado", slug: "colorado", conference: "Big 12", brand: { shortName: "CU", mascot: "Buffaloes", primary: "#CFB87C", secondary: "#000000", espnId: 38, banner: "#000000" } },
   { name: "Kansas State", slug: "kansas-state", conference: "Big 12", brand: { shortName: "K-State", mascot: "Wildcats", primary: "#512888", secondary: "#D1D1D1", espnId: 2306 } },
-  { name: "UCLA", slug: "ucla", conference: "Big Ten", brand: { shortName: "UCLA", mascot: "Bruins", primary: "#2774AE", secondary: "#FFD100", espnId: 26 } },
+  { name: "UCLA", slug: "ucla", conference: "Big Ten", brand: { shortName: "UCLA", mascot: "Bruins", primary: "#2774AE", secondary: "#FFD100", espnId: 26, banner: "#102C46" } },
   { name: "Wisconsin", slug: "wisconsin", conference: "Big Ten", brand: { shortName: "WIS", mascot: "Badgers", primary: "#C5050C", secondary: "#FFFFFF", espnId: 275 } },
   { name: "Minnesota", slug: "minnesota", conference: "Big Ten", brand: { shortName: "MINN", mascot: "Golden Gophers", primary: "#7A0019", secondary: "#FFCC33", espnId: 135 } },
   { name: "Washington", slug: "washington", conference: "Big Ten", brand: { shortName: "UW", mascot: "Huskies", primary: "#4B2E83", secondary: "#B7A57A", espnId: 264 } },
   { name: "Northwestern", slug: "northwestern", conference: "Big Ten", brand: { shortName: "NU", mascot: "Wildcats", primary: "#4E2A84", secondary: "#FFFFFF", espnId: 77 } },
-  { name: "Maryland", slug: "maryland", conference: "Big Ten", brand: { shortName: "UMD", mascot: "Terrapins", primary: "#E03A3E", secondary: "#FFD520", espnId: 120 } },
+  { name: "Maryland", slug: "maryland", conference: "Big Ten", brand: { shortName: "UMD", mascot: "Terrapins", primary: "#E03A3E", secondary: "#FFD520", espnId: 120, banner: "#111111" } },
   { name: "Purdue", slug: "purdue", conference: "Big Ten", brand: { shortName: "PUR", mascot: "Boilermakers", primary: "#CEB888", secondary: "#000000", espnId: 2509, banner: "#000000" } },
   { name: "Duke", slug: "duke", conference: "ACC", brand: { shortName: "DUKE", mascot: "Blue Devils", primary: "#003087", secondary: "#FFFFFF", espnId: 150 } },
   { name: "Stanford", slug: "stanford", conference: "ACC", brand: { shortName: "STAN", mascot: "Cardinal", primary: "#8C1515", secondary: "#FFFFFF", espnId: 24 } },
   { name: "Virginia", slug: "virginia", conference: "ACC", brand: { shortName: "UVA", mascot: "Cavaliers", primary: "#232D4B", secondary: "#F84C1E", espnId: 258 } },
   { name: "Boston College", slug: "boston-college", conference: "ACC", brand: { shortName: "BC", mascot: "Eagles", primary: "#98002E", secondary: "#BC9B6A", espnId: 103 } },
   { name: "Pitt", slug: "pitt", conference: "ACC", brand: { shortName: "PITT", mascot: "Panthers", primary: "#003594", secondary: "#FFB81C", espnId: 221 } },
-  { name: "Syracuse", slug: "syracuse", conference: "ACC", brand: { shortName: "CUSE", mascot: "Orange", primary: "#F76900", secondary: "#000E54", espnId: 183 } },
+  { name: "Syracuse", slug: "syracuse", conference: "ACC", brand: { shortName: "CUSE", mascot: "Orange", primary: "#F76900", secondary: "#000E54", espnId: 183, banner: "#000E54" } },
   { name: "Cal", slug: "cal", conference: "ACC", brand: { shortName: "CAL", mascot: "Golden Bears", primary: "#003262", secondary: "#FDB515", espnId: 25 } },
   { name: "Georgia Tech", slug: "georgia-tech", conference: "ACC", brand: { shortName: "GT", mascot: "Yellow Jackets", primary: "#B3A369", secondary: "#003057", espnId: 59, banner: "#003057" } },
   { name: "Boise State", slug: "boise-state", conference: "Pac-12", brand: { shortName: "BSU", mascot: "Broncos", primary: "#0033A0", secondary: "#D64309", espnId: 68 } },
@@ -102,10 +102,18 @@ export const schools: readonly School[] = [
   ...newSchools,
 ];
 
-export const articleSchoolOptions = [
-  ...schools.map(({ name, slug }) => ({ name, slug })),
-  { name: "Recruiting", slug: "recruiting" },
-] as const;
+export const compareSchoolNames = (a: { name: string }, b: { name: string }) =>
+  a.name.localeCompare(b.name, "en", { sensitivity: "base" });
+
+export const schoolsAlphabetical = [...schools].sort(compareSchoolNames);
+
+const editorialSchoolOptions = [...schoolsAlphabetical, { name: "Recruiting", slug: "recruiting" }].sort(compareSchoolNames);
+
+export function articleSchoolOptions(savedValue: string) {
+  return savedValue && !editorialSchoolOptions.some(({ name }) => name === savedValue)
+    ? [...editorialSchoolOptions, { name: savedValue, slug: savedValue }].sort(compareSchoolNames)
+    : editorialSchoolOptions;
+}
 
 export const getSchoolBySlug = (slug: string) =>
   schools.find((school) => school.slug === slug);

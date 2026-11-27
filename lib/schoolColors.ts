@@ -3,7 +3,7 @@ import { join } from "node:path";
 import type { CSSProperties } from "react";
 import { getSchoolBySlug } from "@/lib/schools";
 
-type SchoolColors = { primary: string; secondary: string; abbr: string; dark?: string; banner?: string; whiteBannerText?: boolean; whiteBannerLogo?: boolean; bannerLogoBadge?: boolean; followInk?: string; logoSrc?: string };
+type SchoolColors = { primary: string; secondary: string; abbr: string; dark?: string; banner?: string; whiteBannerText?: boolean; whiteBannerLogo?: boolean; followInk?: string };
 
 export const SCHOOL_COLORS: Record<string, SchoolColors> = {
   alabama: { primary: "#9E1B32", secondary: "#FFFFFF", whiteBannerText: true, abbr: "ALA" },
@@ -61,6 +61,8 @@ export const SCHOOL_COLORS: Record<string, SchoolColors> = {
   "unlv": { primary: "#CF0A2C", secondary: "#FFFFFF", whiteBannerText: true, abbr: "UNL" },
 };
 
+const whiteExpansionBannerLogos = new Set(["tcu", "kansas-state", "san-diego-state", "texas-state", "washington-state"]);
+
 const defaultColors: SchoolColors = { primary: "#C81E25", secondary: "#FFFFFF", abbr: "TT" };
 export function schoolColors(slug?: string): SchoolColors {
   const brand = slug ? getSchoolBySlug(slug)?.brand : undefined;
@@ -69,8 +71,7 @@ export function schoolColors(slug?: string): SchoolColors {
     secondary: brand.secondary,
     abbr: brand.shortName,
     banner: brand.banner,
-    bannerLogoBadge: !brand.banner,
-    logoSrc: `https://a.espncdn.com/i/teamlogos/ncaa/500/${brand.espnId}.png`,
+    whiteBannerLogo: Boolean(slug && whiteExpansionBannerLogos.has(slug)),
   } : SCHOOL_COLORS[slug ?? ""] ?? defaultColors;
 }
 
@@ -121,8 +122,6 @@ export function schoolBannerLogo(slug: string) {
 }
 
 export function schoolLogo(slug: string) {
-  const { logoSrc } = schoolColors(slug);
-  if (logoSrc) return logoSrc;
   return ["svg", "png", "webp"].map(ext => `/images/schools/${slug}.${ext}`)
     .find(path => existsSync(join(process.cwd(), "public", path)));
 }
