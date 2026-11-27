@@ -3,7 +3,7 @@ import type { Article } from "@/components/ArticleCard";
 import { schools } from "@/lib/schools";
 import { attachWriters } from "@/lib/writers";
 import { canonicalSite } from "@/lib/pageMetadata";
-import { articlePath } from "@/lib/articlePaths";
+import { articlePath, legacyArticleSlug } from "@/lib/articlePaths";
 
 export { articlePath, legacyArticleSlug } from "@/lib/articlePaths";
 
@@ -27,8 +27,8 @@ export function editorialClient() {
   });
 }
 
-export async function stories({ school, football, recruiting, category, titleContains, writerId, limit = 24 }: {
-  school?: string; football?: boolean; recruiting?: boolean; category?: string; titleContains?: string; writerId?: string; limit?: number | null;
+export async function stories({ school, football, basketball, recruiting, category, titleContains, writerId, limit = 24 }: {
+  school?: string; football?: boolean; basketball?: boolean; recruiting?: boolean; category?: string; titleContains?: string; writerId?: string; limit?: number | null;
 } = {}): Promise<Article[]> {
   const db = editorialClient();
   let query = db.from("articles").select("id,slug,title,excerpt,cover_image_url,category,school,published_at,is_top_story,writer_profile_id,byline:body->>author_name,author_name").eq("status", "published");
@@ -37,6 +37,7 @@ export async function stories({ school, football, recruiting, category, titleCon
     query = query.or('school.ilike.lsu,and(or(school.is.null,school.eq.""),title.ilike.%LSU%)');
   } else if (school) query = query.eq("school", school);
   if (football) query = query.in("category", footballCategories);
+  if (basketball) query = query.or(`category.ilike.%basketball%,title.ilike.%basketball%,title.ilike.%CBB%,excerpt.ilike.%basketball%,excerpt.ilike.%CBB%,slug.in.(n,${legacyArticleSlug})`);
   if (category) query = query.eq("category", category);
   if (writerId) query = query.eq("writer_profile_id", writerId);
   if (titleContains) query = query.ilike("title", `%${titleContains}%`);
@@ -55,6 +56,16 @@ export async function stories({ school, football, recruiting, category, titleCon
     school: school === "LSU" ? school : row.school,
     body: { author_name: row.byline || row.author_name || undefined },
   })));
+}
+
+export async function basketballStories(limit: number | null = null) {
+  const articles = await stories({ basketball: true, limit });
+  return [...new Map(articles.filter(article => article.slug !== "n" || !articles.some(item => item.slug === legacyArticleSlug))
+    .map(article => [articlePath(article.slug), article])).values()].map(article => ({
+    ...article,
+    category: article.category === "Recruiting" ? article.category : "College Basketball",
+    conference: schoolByName(article.school)?.conference ?? (article.school === "Iowa State" ? "Big 12" : undefined),
+  }));
 }
 
 export async function latestTvGuidePath() {

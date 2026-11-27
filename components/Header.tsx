@@ -7,6 +7,7 @@ import { ActiveNavLink } from "@/components/ActiveNavLink";
 
 const links = [
   ["/articles", "Latest"], ["/college-football", "College Football"],
+  ["/basketball", "Basketball"],
   ["/boards", "Boards"], ["/schools", "Schools"],
   ["/recruiting", "Recruiting"], ["/writers", "Writers"],
 ] as const;

@@ -147,7 +147,8 @@ body:has(.editorial){background:var(--tt-paper);color:#18181b}
 .school-banner-identity .school-badge-logo{padding:0}
 .school-banner h1{margin:0;font-size:28px;letter-spacing:.04em}
 .school-banner p{margin:3px 0 0;color:var(--school-banner-muted);font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase}
-.school-banner :is(h1,p,.school-banner-social>span){background-color:var(--school-banner-text-bg,transparent);box-shadow:0 0 0 2px var(--school-banner-text-bg,transparent);width:fit-content}
+.school-banner :is(h1,p,.school-banner-social>span){background:transparent;box-shadow:none;text-shadow:var(--school-banner-shadow,none);width:fit-content}
+.school-banner .school-badge-white img{filter:brightness(0) invert(1)}
 .school-banner-social{display:flex;flex-direction:column;align-items:flex-end;gap:6px;margin-left:auto;padding-bottom:10px}
 .school-banner-social>span{color:var(--school-banner-muted);font-size:11px;font-weight:600}
 .school-follow-pill,.beat-follow{display:inline-flex;align-items:center;justify-content:center;gap:7px;font-weight:700}

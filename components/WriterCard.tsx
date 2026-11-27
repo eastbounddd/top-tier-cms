@@ -1,13 +1,24 @@
 ﻿import Link from "next/link";
 import { XAccountLink } from "@/components/XAccountLink";
-import { writerImage, writerXHandle, type Writer } from "@/lib/writers";
+import { WriterAvatar } from "@/components/WriterAvatar";
+import { writerSchool } from "@/lib/writerDirectory";
+import { schoolTheme } from "@/lib/schoolColors";
+import { writerXHandle, type Writer } from "@/lib/writers";
+
 export function WriterCard({ writer }: { writer: Writer }) {
   const handle = writerXHandle(writer);
-  return <aside className="writer-card"><img src={writerImage(writer)} alt={writer.name} /><div>
-    <h2><Link href={`/author/${writer.slug}`}>{writer.name}</Link></h2>
-    {writer.coverage?.length > 0 && <p>{writer.coverage.join(" · ")}</p>}
-    {writer.bio?.trim().split(/\n\s*\n/).filter(Boolean).map((paragraph, index) => <p key={index}>{paragraph}</p>)}
-    <Link className="writer-link" href={`/author/${writer.slug}`}>More from {writer.name}</Link>
-    {handle && <> · <XAccountLink handle={handle} className="writer-link writer-x-link" /></>}
-  </div></aside>;
+  const school = writerSchool(writer);
+  const bio = writer.bio?.trim();
+  const profile = `/writers/${writer.slug}`;
+  return <aside className="compact-author-card" style={school ? schoolTheme(school.slug) : undefined}>
+    <WriterAvatar name={writer.name} source={writer.profile_image} size={48} />
+    <div className="compact-author-copy">
+      <h2><Link href={profile}>{writer.name}</Link>{writer.coverage?.length > 0 && <span> · {writer.coverage.join(" · ")}</span>}</h2>
+      {bio && !/awaiting editorial review|^TODO/i.test(bio) && <p>{bio}</p>}
+    </div>
+    <div className="compact-author-actions">
+      {handle && <XAccountLink handle={handle} className="directory-follow" />}
+      <Link href={profile}>More articles →</Link>
+    </div>
+  </aside>;
 }

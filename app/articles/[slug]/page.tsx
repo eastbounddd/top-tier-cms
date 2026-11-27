@@ -108,7 +108,7 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
   const football = { name: "College Football", path: "/college-football" };
   const topic = school ? { name: school.name, path: `/schools/${school.slug}` } :
     data.school === "Recruiting" || data.category === "Recruiting" ? { name: "Recruiting", path: "/recruiting" } :
-    data.category === "College Basketball" ? { name: data.category, path: "/college-basketball" } :
+    data.category === "College Basketball" ? { name: data.category, path: "/basketball" } :
     data.category === "College Football" ? football : { name: data.school || data.category || "Latest", path: "/articles" };
   const crumbs = topic.path === football.path ? [football] : [football, topic];
   const path = articlePath(data.slug);

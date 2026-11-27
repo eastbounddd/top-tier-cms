@@ -56,8 +56,7 @@
 .recruiting-layout .newsroom-feed,.board-directory{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
 .board-directory-card>a{margin-top:auto}
 .free-note{display:inline-flex;width:max-content;max-width:100%;align-items:center;margin:4px 0 0 9px;border-radius:999px;background:#fef2f2;color:#a5181e;padding:3px 7px;font-weight:700;font-size:10px;text-transform:uppercase;white-space:nowrap}
-.school-banner .free-note{margin:5px 0 0;background:color-mix(in srgb,var(--school-banner-text) 12%,transparent);color:var(--school-banner-muted)}
-.school-hub[style*="--school-banner-text-bg"] .free-note{background:var(--school-banner-text-bg);color:#fff}
+.school-banner .free-note{margin:5px 0 0;background:rgba(0,0,0,.22);color:#fff;text-shadow:0 1px 2px rgba(0,0,0,.18)}
 .national-feed-label{margin:0 0 7px;font-size:20px}
 .editorial-footer .footer-grid p{color:#d4d4d8;font-size:12px;margin:0 0 12px}
 .editorial-newsletter section{margin-bottom:0;border-top-color:#e5e7eb}
@@ -136,4 +135,64 @@
   .preferred-source,.recirc-next-card{align-items:flex-start;flex-direction:column}
   .recirc-next-card .recirc-thumb{width:100%;height:auto;aspect-ratio:16/9}
   .directory-card{padding:11px}
+}
+
+/* Advertising, basketball coverage, and the article byline card. */
+.advertise,.basketball-band,.compact-author-card{--editorial-accent:#d91e2a}
+.advertise-hero,.advertise-contact,.advertise-placements article{
+  box-sizing:border-box;background:#fff;border:1px solid #e5e7eb;border-radius:8px;padding:18px;
+}
+.advertise-hero,.advertise-placements article{border-top:3px solid var(--editorial-accent)}
+.advertise-hero .newsroom-heading>small,.advertise-contact>small,.advertise-placements small{color:var(--editorial-accent);font-weight:800}
+.advertise-actions{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px}
+.advertise-primary,.advertise-secondary{
+  box-sizing:border-box;display:inline-flex;align-items:center;justify-content:center;min-height:42px;
+  border-radius:5px;padding:8px 12px;font-size:13px;font-weight:700;cursor:pointer;
+}
+.advertise-primary{background:var(--editorial-accent);border:1px solid var(--editorial-accent);color:#fff}
+.advertise-primary:hover,.advertise-primary:focus-visible{background:#a5181e}
+.advertise-secondary{background:#fff;border:1px solid #e5e7eb;color:#111}
+.advertise-secondary:hover{border-color:#111}
+.advertise-stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin:14px 0;padding:13px;background:#f8f9fa;border:1px solid #e5e7eb;border-radius:8px}
+.advertise-stats>div{display:flex;flex-direction:column;min-width:0;gap:2px;padding:4px 8px}
+.advertise-stats dt{font-size:13px;font-weight:700;color:#111}
+.advertise-stats dd{display:contents;margin:0}
+.advertise-stats strong{order:-1;font:800 32px/1 var(--font-display),sans-serif;color:#111}
+.advertise-stats span,.advertise p{color:#4b5563;font-size:13px;line-height:1.5;overflow-wrap:anywhere}
+.advertise-placements,.advertise-benefits>div:last-child{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.advertise-placements h2,.advertise-contact h2,.advertise-benefits h3{margin:6px 0;font-size:23px;line-height:1.1}
+.advertise-placements p,.advertise-benefits p{margin:0}
+.advertise-benefits>div:last-child article{padding:0 8px}
+.advertise-contact{margin-top:20px;border-left:4px solid var(--editorial-accent)}
+.advertise-email{color:#a5181e;font-size:13px;font-weight:700;text-decoration:underline;overflow-wrap:anywhere}
+.footer-story-dialog,.footer-story-dialog .modal-x{color:#111}
+.footer-story-dialog{background:#fff;border-color:#e5e7eb}
+.footer-story-dialog :is(small,a){color:#a5181e}
+.basketball-band .editorial-heading{border-left:4px solid var(--editorial-accent);padding-left:9px}
+.basketball-feed{grid-template-columns:repeat(var(--basketball-count,4),minmax(0,1fr))}
+.compact-author-card{
+  box-sizing:border-box;display:flex;align-items:center;gap:14px;margin-top:26px;padding:14px 18px;
+  background:#fff;border:1px solid #e5e7eb;border-left:3px solid var(--editorial-accent);border-radius:8px;
+}
+.compact-author-card :is(.directory-avatar,.writer-monogram){box-sizing:border-box;width:48px;height:48px;border:1px solid #e5e7eb}
+.compact-author-card .writer-monogram{background:var(--school-ink,var(--editorial-accent))}
+.compact-author-card:not([style]) .writer-monogram{background:var(--editorial-accent)}
+.compact-author-copy{min-width:0;flex:1}
+.compact-author-copy h2{margin:0;font:700 16px/1.35 var(--font-sans),sans-serif;text-transform:none;color:#111}
+.compact-author-copy h2 span{color:#6b7280;font-size:13px;font-weight:400}
+.compact-author-copy p{font-size:13px;color:#4b5563;line-height:1.4;margin:4px 0 0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.compact-author-actions{display:flex;align-items:center;flex-wrap:wrap;gap:7px 10px;min-width:0;font-size:13px;font-weight:700}
+.compact-author-actions>a:not(.directory-follow){color:var(--editorial-accent)}
+.compact-author-actions .directory-follow{background:#f3f4f6}
+.compact-author-actions a:hover{text-decoration:underline}
+@media(max-width:767px){
+  .basketball-feed{grid-template-columns:minmax(0,1fr)}
+  .basketball-feed .newsroom-photo{height:64px}
+  .advertise-stats{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .advertise-placements,.advertise-benefits>div:last-child{grid-template-columns:minmax(0,1fr)}
+}
+@media(max-width:639px){
+  .compact-author-card{display:grid;grid-template-columns:42px minmax(0,1fr);gap:7px 10px;padding:12px 14px}
+  .compact-author-card :is(.directory-avatar,.writer-monogram){width:42px!important;height:42px!important}
+  .compact-author-actions{grid-column:2}
 }

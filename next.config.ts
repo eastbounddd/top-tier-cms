@@ -6,6 +6,7 @@ const nextConfig: NextConfig = {
   outputFileTracingIncludes: { "/*": ["./public/images/schools/**/*", "./public/images/school-x/**/*"] },
   async redirects() {
     return [
+      { source: "/college-basketball", destination: "/basketball", permanent: true },
       {
         source: "/articles/articles-alex-collins-arkansas-razorbacks",
         destination: "/articles/alex-collins-arkansas-razorbacks",
@@ -17,6 +18,7 @@ const nextConfig: NextConfig = {
     return [{ source: "/:asset(.*\\.(?:png|webp|ico))", headers: [{key:"Cache-Control",value:"public, max-age=86400, stale-while-revalidate=604800"}] }];
   },
   images: {
+    qualities: [75, 85],
     deviceSizes: [390, 640, 768, 960, 1200, 1600, 1920],
     formats: ["image/avif", "image/webp"],
     remotePatterns: [

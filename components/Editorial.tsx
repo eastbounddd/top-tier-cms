@@ -23,18 +23,21 @@ export function LiveBoards({ id, light = false }: { id?: string; light?: boolean
 }
 
 export function EditorialThumbnail({ article, className, sizes }: { article: Article; className: string; sizes: string }) {
-  return <span className={`editorial-thumb ${className}`}><StoryImage src={article.cover_image_url} alt="" fill sizes={sizes} /></span>;
+  return <span className={`editorial-thumb ${className}`}><StoryImage src={article.cover_image_url} alt="" fill sizes={sizes} quality={85} /></span>;
 }
 
 export function MoreStories({ title, articles, expanded = false }: { title: string; articles: Article[]; expanded?: boolean }) {
   if (!articles.length) return null;
+  let hot = 0;
   return <section className={`rail-card more-stories${expanded ? " more-stories-expanded" : ""}`}>
     <div className="rail-heading"><h2>{title}</h2>{expanded && <Link href="/college-football">View all →</Link>}</div>
     <ul>{articles.map(article => {
       const fresh = article.published_at && Date.now() - Date.parse(article.published_at) <= 48 * 60 * 60_000;
-      const status = article.category === "Breaking News" ? "Breaking" : /\bflip/i.test(article.title) ? "Trending" : article.is_top_story ? "Hot" : fresh ? "New" : "";
+      const status = article.category === "Breaking News" ? "Breaking" : /\bflip/i.test(article.title) ? "Trending" :
+        article.is_top_story && hot < 2 ? "Hot" : fresh ? "New" : "";
+      if (status === "Hot") hot++;
       return <li key={article.id}><Link href={articlePath(article.slug)}>
-        {expanded && <EditorialThumbnail article={article} className="rail-story-thumb" sizes="60px" />}
+        {expanded && <EditorialThumbnail article={article} className="rail-story-thumb" sizes="240px" />}
         <div>{expanded && status && <b className={`story-status status-${status.toLowerCase()}`}>{status}</b>}
           <strong>{article.title}</strong>{!expanded && <span>{article.school || article.category}</span>}</div>
       </Link></li>;
@@ -58,8 +61,9 @@ export function QuickJump({ ranks }: { ranks: { anchor: string; number: number; 
 export function SchoolBadge({ school, size, alt = "", banner = false }: {
   school: SchoolBeat; size: 20 | 28 | 44; alt?: string; banner?: boolean;
 }) {
-  const logo = banner ? schoolBannerLogo(school.slug) : schoolLogo(school.slug);
-  return <span className={`school-badge badge-${size}${logo ? " school-badge-logo" : ""}`} aria-hidden={logo && alt ? undefined : true}>
+  const white = banner && schoolColors(school.slug).whiteBannerLogo;
+  const logo = banner && !white ? schoolBannerLogo(school.slug) : schoolLogo(school.slug);
+  return <span className={`school-badge badge-${size}${logo ? " school-badge-logo" : ""}${logo && white ? " school-badge-white" : ""}`} aria-hidden={logo && alt ? undefined : true}>
     {logo ? <Image src={logo} alt={alt} width={size} height={size} unoptimized /> : schoolColors(school.slug).abbr}
   </span>;
 }

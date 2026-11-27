@@ -4,9 +4,10 @@ import { Footer } from "@/components/Footer";
 import { UpcomingGames } from "@/components/UpcomingGames";
 import { NewsCard } from "@/components/NewsFeed";
 import { EditorialNewsletter, JsonLd, LiveBoards, MoreStories, Story, StoryGrid, TeamGrid } from "@/components/Editorial";
-import { articlePath, boards, footballCategories, stories, storyList } from "@/lib/editorial";
+import { articlePath, basketballStories, boards, footballCategories, stories, storyList } from "@/lib/editorial";
 import { pageMetadata } from "@/lib/pageMetadata";
 import type { Article } from "@/components/ArticleCard";
+import type { CSSProperties } from "react";
 
 export const revalidate = 60;
 export const dynamic = "force-static";
@@ -20,8 +21,9 @@ export const metadata = {
 };
 
 export default async function Home() {
-  const [articles, recruiting] = await Promise.all([stories({ limit: 30 }), stories({ recruiting: true, limit: 5 })]);
-  const used = new Set(boards.map(board => board.path));
+  const [articles, recruiting, basketball] = await Promise.all([stories({ limit: 30 }), stories({ recruiting: true, limit: 5 }), basketballStories(5)]);
+  const hoops = basketball.slice(0, 4);
+  const used = new Set([...boards.map(board => board.path), ...hoops.map(article => articlePath(article.slug))]);
   const candidates = articles.filter(article => !used.has(articlePath(article.slug)));
   const lead = candidates.find(article => article.is_top_story) ?? candidates[0];
   if (lead) used.add(articlePath(lead.slug));
@@ -59,6 +61,12 @@ export default async function Home() {
         <div className="editorial-heading"><h2>Latest News</h2><Link href="/articles">All articles →</Link></div>
         <StoryGrid articles={latest} />
       </section>
+      {hoops.length > 0 && <section className="editorial-section basketball-band">
+        <div className="editorial-heading"><h2>College Basketball</h2><Link href="/basketball">View All Basketball →</Link></div>
+        <div className="newsroom-feed basketball-feed" style={{ "--basketball-count": hoops.length } as CSSProperties}>
+          {hoops.map(article => <NewsCard key={article.id} article={article} basketballBand />)}
+        </div>
+      </section>}
         {recruits.length > 0 && <section className="editorial-section">
           <div className="editorial-heading"><h2>Recruiting</h2><Link href="/recruiting">More recruiting →</Link></div>
           <StoryGrid articles={recruits} />
@@ -66,6 +74,6 @@ export default async function Home() {
       <EditorialNewsletter />
     </main>
     <Footer newsletter={false} />
-    <JsonLd data={storyList("Latest Top Tier stories", [...(lead ? [lead] : []), ...secondary, ...moreFootball, ...latest])} />
+    <JsonLd data={storyList("Latest Top Tier stories", [...(lead ? [lead] : []), ...secondary, ...moreFootball, ...latest, ...hoops])} />
   </>;
 }

@@ -2,7 +2,7 @@
 import Image from "next/image";
 import { articlePath } from "@/lib/articlePaths";
 import type { Writer } from "@/lib/writers";
-export type Article = { id: string; title: string; slug: string; excerpt?: string | null; cover_image_url?: string | null; category: string; school?: string | null; published_at?: string | null; is_top_story?: boolean; writer_profile_id?: string | null; writer?: Writer; body?: { author_name?: string } | string | null };
+export type Article = { id: string; title: string; slug: string; excerpt?: string | null; cover_image_url?: string | null; category: string; school?: string | null; conference?: string; published_at?: string | null; is_top_story?: boolean; writer_profile_id?: string | null; writer?: Writer; body?: { author_name?: string } | string | null };
 export function ArticleCard({ article, featured = false, metaLabel }: { article: Article; featured?: boolean; metaLabel?: string }) {
  const image = article.cover_image_url || "/top-tier-logo.png";
  const path = articlePath(article.slug);

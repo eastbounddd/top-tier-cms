@@ -6,14 +6,18 @@ import type { Article } from "@/components/ArticleCard";
 import { articlePath } from "@/lib/articlePaths";
 import { StoryImage } from "@/components/StoryImage";
 
-export function NewsCard({ article, featured = false, secondary = false }: { article: Article; featured?: boolean; secondary?: boolean }) {
+export function NewsCard({ article, featured = false, secondary = false, basketballBand = false }: {
+  article: Article; featured?: boolean; secondary?: boolean; basketballBand?: boolean;
+}) {
   const path = articlePath(article.slug);
   const author = article.writer?.name || (typeof article.body === "object" && article.body?.author_name);
   const date = article.published_at && new Intl.DateTimeFormat("en-US", { timeZone: "America/Chicago", month: "short", day: "numeric", ...(!secondary ? { year: "numeric" } : {}) }).format(new Date(article.published_at));
   const Heading = featured ? "h2" : "h3";
   return <article className={`newsroom-card${featured ? " newsroom-featured" : ""}`}>
     <Link href={path} className="newsroom-photo" tabIndex={-1} aria-hidden="true">
-      <StoryImage src={article.cover_image_url} alt={article.title} fill sizes={featured ? "(max-width: 767px) 100vw, 55vw" : "(max-width: 767px) 96px, 33vw"} priority={featured} />
+      <StoryImage src={article.cover_image_url} alt={article.title} fill quality={85}
+        sizes={basketballBand ? "(max-width: 768px) 100vw, 320px" : featured ? "(max-width: 767px) 100vw, 55vw" : secondary ? "(max-width: 1023px) 280px, 33vw" : "(max-width: 767px) 280px, 33vw"}
+        priority={featured} />
     </Link>
     <div className="newsroom-copy">
       <div className="newsroom-meta"><b>{featured && "Featured · "}{article.category}</b>
@@ -32,6 +36,7 @@ export function NewsCard({ article, featured = false, secondary = false }: { art
 
 const topics = ["All", "College Football", "Recruiting", "Rankings", "College Basketball", "Analysis"];
 const recruitingTopics = ["All", "2027 Class", "2028 Class", "Flip Watch", "Commitments"];
+const basketballTopics = ["All", "SEC", "Big Ten", "Big 12", "ACC", "Recruiting"];
 
 function matchesTopic(article: Article, filter: string) {
   const text = `${article.title} ${article.excerpt ?? ""}`;
@@ -44,11 +49,11 @@ function matchesTopic(article: Article, filter: string) {
     case "2028 Class": return /\b2028\b/.test(text);
     case "Flip Watch": return /\bflip/i.test(text);
     case "Commitments": return /\bcommit|signs with/i.test(text);
-    default: return article.category === filter;
+    default: return article.category === filter || article.conference === filter;
   }
 }
 
-export function NewsFeed({ articles, recruiting = false, rail }: { articles: Article[]; recruiting?: boolean; rail?: ReactNode }) {
+export function NewsFeed({ articles, recruiting = false, basketball = false, rail }: { articles: Article[]; recruiting?: boolean; basketball?: boolean; rail?: ReactNode }) {
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState("All");
   const [oldest, setOldest] = useState(false);
@@ -63,7 +68,7 @@ export function NewsFeed({ articles, recruiting = false, rail }: { articles: Art
   return <>
     <div className="directory-controls">
       <input type="search" value={query} placeholder={placeholder} aria-label={placeholder} onChange={event => { setQuery(event.target.value); setLimit(13); }} />
-      <div className="filter-pills" aria-label="Topics">{(recruiting ? recruitingTopics : topics).map(topic =>
+      <div className="filter-pills" aria-label="Topics">{(basketball ? basketballTopics : recruiting ? recruitingTopics : topics).map(topic =>
         <button key={topic} type="button" aria-pressed={topic === filter} onClick={() => { setFilter(topic); setLimit(13); }}>{topic}</button>,
       )}</div>
     </div>
