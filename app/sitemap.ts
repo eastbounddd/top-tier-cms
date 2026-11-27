@@ -85,10 +85,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     },
     { url: `${siteUrl}/college-football`, lastModified: latest, changeFrequency: "daily", priority: 0.9 },
     { url: `${siteUrl}/tv-guide`, changeFrequency: "daily", priority: 0.7 },
+    { url: `${siteUrl}/boards`, changeFrequency: "daily", priority: 0.8 },
     { url: `${siteUrl}/college-basketball`, changeFrequency: "daily", priority: 0.8 },
     { url: `${siteUrl}/newsletter`, changeFrequency: "weekly", priority: 0.6 },
     { url: `${siteUrl}/writers`, changeFrequency: "weekly", priority: 0.7 },
     ...(writers || []).map(writer => ({ url: `${siteUrl}/author/${encodeURIComponent(writer.slug)}`, changeFrequency: "weekly" as const, priority: 0.7 })),
+    ...(writers || []).map(writer => ({ url: `${siteUrl}/writers/${encodeURIComponent(writer.slug)}`, changeFrequency: "weekly" as const, priority: 0.7 })),
     ...schools.map((school) => ({
       url: `${siteUrl}/schools/${school.slug}`,
       lastModified: articles.filter(a => a.school === school.name).map(a => a.content_updated_at || a.published_at).filter((date): date is string => Boolean(date)).sort().at(-1),

@@ -12,8 +12,9 @@ export default function AboutPage() {
   return (
     <>
       <Header />
-      <main id="main-content" className="shell policy-page">
+      <main id="main-content" className="shell policy-page editorial">
         <h1>About Top Tier</h1>
+        <p>100% free college sports news, recruiting, and scoops. No paywalls, ever.</p>
         <p>Top Tier is the college sports site from Top Tier Media, built for fans who want clear news, sharp analysis, and original reporting. We are college football first. We also cover the wider college sports world, including basketball, recruiting, and the program stories that shape a season.</p>
         <p>We launched in August 2016 with a simple aim: tell the story before everyone else, and write it like people who actually watch the games. On toptierstate.net you will find news, analysis, original graphics, and weekly TV guides, plus coverage of schools across the country. Whether you follow a national title contender or a Group of Five program, we want this to be a place you can check and leave more informed.</p>
         <p>Our work is a team effort. Volunteer writers contribute articles through our writer dashboard, covering the programs they know best. That community is a big part of what makes Top Tier different. You can also find us on X at @TopTierStateX, on Instagram at @TopTierState, and on TikTok at @TopTierState, where we share news, highlights, and the graphics our audience comes back for.</p>

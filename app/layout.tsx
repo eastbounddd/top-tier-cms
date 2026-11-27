@@ -7,6 +7,7 @@ import { Analytics } from "@vercel/analytics/next";
 import "./globals.css";
 import "./social-polish.css";
 import "./editorial.css";
+import "./newsroom.css";
 
 const barlow = Barlow_Condensed({ subsets: ["latin"], weight: ["700", "800"], variable: "--font-display", display: "swap" });
 const inter = Inter({ subsets: ["latin"], weight: ["400", "500", "600", "700"], variable: "--font-sans", display: "swap" });
@@ -20,7 +21,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="en" className={`${barlow.variable} ${inter.variable}`}>
+    <html lang="en" className={`${barlow.variable} ${inter.variable}`} style={{ WebkitTextSizeAdjust: "100%" }}>
       <head>
         <Script
           strategy="lazyOnload"

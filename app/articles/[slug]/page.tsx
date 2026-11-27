@@ -10,11 +10,11 @@ import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { RenderedArticleContent } from "@/components/RenderedArticleContent";
 import { ArticleShare } from "@/components/ArticleShare";
+import { ArticleRecirculation, PreferredSource } from "@/components/ArticleRecirculation";
 import { EditorialNewsletter, JsonLd, LiveBoards, MoreStories, QuickJump, SchoolBeatCard } from "@/components/Editorial";
 import { articlePath, editorialClient, editorialDate, itemList, legacyArticleSlug, schoolByName, stories } from "@/lib/editorial";
 import { articlePresentation } from "@/lib/articlePresentation";
 import { schoolTheme } from "@/lib/schoolColors";
-import { additionalSchoolBeats } from "@/lib/schools";
 import { getArticleImage, getSocialImageUrl, getXShareArticleUrl, siteUrl } from "@/lib/articleSocialImage";
 import { coverWidth, coverHeight } from "@/lib/articleCover";
 
@@ -104,7 +104,7 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
   const author = writer?.name || (typeof data.body === "object" && data.body?.author_name) || data.author_name || "Top Tier";
   const school = schoolByName(data.school);
   const schoolSlug = school?.slug || data.school?.trim().toLowerCase().replace(/\s+/g, "-");
-  const beat = school ?? additionalSchoolBeats.find(entry => entry.slug === schoolSlug);
+  const beat = school;
   const football = { name: "College Football", path: "/college-football" };
   const topic = school ? { name: school.name, path: `/schools/${school.slug}` } :
     data.school === "Recruiting" || data.category === "Recruiting" ? { name: "Recruiting", path: "/recruiting" } :
@@ -121,12 +121,14 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
   const credit = typeof data.body?.cover_credit === "string" ? data.body.cover_credit : "";
 
   const heisman = /\bheisman\b/i.test(data.title);
-  const [topicStories, generalStories] = await Promise.all([
-    heisman ? stories({ titleContains: "Heisman", limit: 4 }) :
-      beat ? stories({ school: beat.name, limit: 4 }) : stories({ category: data.category, limit: 4 }),
-    stories({ football: data.category !== "College Basketball", limit: 8 }),
+  const [schoolStories, topicStories, generalStories] = await Promise.all([
+    beat ? stories({ school: beat.name, limit: 8 }) : Promise.resolve([]),
+    heisman ? stories({ titleContains: "Heisman", limit: 8 }) : stories({ category: data.category, limit: 8 }),
+    stories({ limit: 14 }),
   ]);
-  const related = [...new Map([...topicStories, ...generalStories].filter(story => story.id !== data.id).map(story => [story.id, story])).values()].slice(0, 3);
+  const related = [...new Map([...schoolStories, ...topicStories, ...generalStories]
+    .filter(story => articlePath(story.slug) !== path && story.id !== data.id)
+    .map(story => [articlePath(story.slug), story])).values()];
   const relatedTitle = heisman ? "More Heisman & CFB" : `More ${beat?.name || data.category || "Stories"}`;
   const organization = { "@id": `${siteUrl}/#organization` };
   const news = {
@@ -182,10 +184,12 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
         <aside className="editorial-rail">
           {ranks.length > 0 ? <QuickJump ranks={ranks} /> : beat && <SchoolBeatCard school={beat} hub={Boolean(school)} />}
           <LiveBoards />
-          <MoreStories title={relatedTitle} articles={related} />
+          <MoreStories title={relatedTitle} articles={related.slice(5, 8)} />
         </aside>
       </div>
-      <EditorialNewsletter />
+      <EditorialNewsletter article />
+      <PreferredSource />
+      <ArticleRecirculation articles={related.slice(0, 5)} />
     </main>
     <Footer newsletter={false} />
     <JsonLd data={[news, breadcrumbSchema([...crumbs, { name: data.title, path }]),

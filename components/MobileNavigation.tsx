@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import { ActiveNavLink } from "@/components/ActiveNavLink";
 import { useEffect, useRef, useState } from "react";
 
 export function MobileNavigation({ links }: { links: readonly (readonly [string, string])[] }) {
@@ -36,7 +36,7 @@ export function MobileNavigation({ links }: { links: readonly (readonly [string,
       </svg>
     </button>
     <nav id="editorial-mobile-menu" aria-label="Mobile navigation" hidden={!isOpen}>
-      {links.map(([href, label]) => <Link key={href} href={href} onClick={() => setIsOpen(false)}>{label}</Link>)}
+      {links.map(([href, label]) => <ActiveNavLink key={href} href={href} label={label} onClick={() => setIsOpen(false)} />)}
     </nav>
   </div>;
 }

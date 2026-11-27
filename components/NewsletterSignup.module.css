@@ -24,3 +24,14 @@
 @media(max-width:700px){.newsletter{padding:24px;gap:22px}.featured{margin-bottom:56px}.article .title{font-size:30px}.footer{grid-template-columns:1fr;padding:0 0 28px}}
 @media(max-width:600px){.controls{flex-direction:column}.button{width:100%}}
 @media print{.newsletter{display:none}}
+.featured,.article{background:#fff;color:#111;border:1px solid #e5e7eb;border-radius:10px;padding:24px;gap:18px}
+.featured{border-left:4px solid #c81e25}
+.article{background:#f8f9fa;max-width:none;margin:0}
+.featured .title,.article .title{font-size:clamp(25px,4vw,34px);margin:0 0 7px}
+.featured .description,.article .description,.featured .note,.article .note{color:#52525b}
+.featured .email,.article .email{background:white;border:1px solid #d1d5db;color:#111;border-radius:6px}
+.featured .email::placeholder,.article .email::placeholder{color:#6b7280}
+.featured :is(.email,.button):focus-visible,.article :is(.email,.button):focus-visible{outline-color:#a5181e}
+.featured .status,.article .status{color:#166534}
+.featured .error,.article .error{color:#a5181e}
+.mark{display:block;margin-bottom:8px;object-fit:contain}

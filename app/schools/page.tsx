@@ -1,42 +1,31 @@
-import { pageMetadata } from "@/lib/pageMetadata";
 import Link from "next/link";
-import { Header } from "@/components/Header";
+import { DirectoryExplorer } from "@/components/DirectoryExplorer";
+import { SchoolBadge } from "@/components/Editorial";
 import { Footer } from "@/components/Footer";
-import { schools } from "@/lib/schools";
+import { Header } from "@/components/Header";
 import { XAccountLink } from "@/components/XAccountLink";
+import { pageMetadata } from "@/lib/pageMetadata";
+import { schoolTheme } from "@/lib/schoolColors";
+import { schools } from "@/lib/schools";
 
-export const metadata = pageMetadata("College Football Schools", "Explore college football news, analysis and original reporting from the schools covered by Top Tier.", "/schools");
+export const dynamic = "force-static";
+export const revalidate = 60;
+export const metadata = pageMetadata("College Football Schools", "Find Top Tier school hubs for team news, recruiting and original reporting.", "/schools");
 
 export default function SchoolsPage() {
-  return <>
-    <Header />
-    <main id="main-content" className="schools-page shell">
-      <div className="schools-heading">
-        <small>TOP TIER TEAM COVERAGE</small>
-        <h1>Schools</h1>
-        <p>Choose a school to read its latest news, analysis, and original reporting.</p>
-      </div>
-      <div className="schools-grid">
-        {schools.map((school) => (
-          <article key={school.slug} className="school-link-card">
-            <Link href={`/schools/${school.slug}`} className="school-card-logo">
-              <img
-                src={school.xHandle ? `/api/x-avatar?handle=${encodeURIComponent(school.xHandle)}` : "/top-tier-logo-optimized.webp"}
-                alt={school.xHandle ? `${school.name} X account logo` : "Top Tier"}
-              />
-            </Link>
-            <div className="school-card-meta">
-              <span>School Coverage</span>
-              {school.xHandle && <XAccountLink handle={school.xHandle} />}
-            </div>
-            <Link href={`/schools/${school.slug}`} className="school-card-copy">
-              <h2>{school.name}</h2>
-              <b>View Articles →</b>
-            </Link>
-          </article>
-        ))}
-      </div>
-    </main>
-    <Footer />
-  </>;
+  const entries = [...schools].sort((a,b) => a.name.localeCompare(b.name)).map(school => {
+    const handle = school.xHandle ?? "TopTierStateX";
+    return { id: school.slug, searchable: `${school.name} ${school.slug} @${handle}`, filters: [school.conference, ...(["AAC", "Mountain West", "Sun Belt"].includes(school.conference) ? ["Group of 5"] : [])],
+      card: <article className="directory-card school-directory-card" style={schoolTheme(school.slug)}>
+        <div className="directory-card-top"><SchoolBadge school={school} size={44} alt={`${school.name} logo`} /><span>{school.conference}</span></div>
+        <h2><Link href={`/schools/${school.slug}`}>{school.name}</Link></h2>
+        <p>@{handle}</p>
+        <div className="directory-card-actions"><Link href={`/schools/${school.slug}`}>View Hub →</Link><XAccountLink handle={handle} className="directory-follow" label="Follow" /></div>
+      </article>,
+    };
+  });
+  return <><Header /><main id="main-content" className="editorial shell newsroom-index">
+    <section className="newsroom-heading"><small>Top Tier Team Coverage · {schools.length} School Hubs</small><h1>Schools</h1><p>Find your team for the latest college sports news, recruiting and analysis.</p></section>
+    <DirectoryExplorer entries={entries} filters={[`All (${schools.length})`, "SEC", "Big 12", "Big Ten", "ACC", "Group of 5"]} placeholder="Search schools or @handles..." gridClass="directory-grid" />
+  </main><Footer /></>;
 }

@@ -29,13 +29,13 @@ export default async function SchoolPage({ params }: { params: Promise<{ slug: s
   const school = getSchoolBySlug((await params).slug);
   if (!school) notFound();
   const articles = await stories({ school: school.name, limit: 40 });
-  const [lead, ...latest] = articles;
+  const [lead, ...latest] = articles.length ? articles : await stories({ football: true, limit: 10 });
   const path = `/schools/${school.slug}`;
   return <>
     <Header />
     <main id="main-content" className="editorial school-hub shell" style={schoolTheme(school.slug)}>
       <div className="school-banner">
-        <div className="school-banner-identity"><SchoolBadge school={school} size={44} /><div><h1>{school.name}</h1><p>School Hub · Football · Recruiting · Basketball</p></div></div>
+        <div className="school-banner-identity"><SchoolBadge school={school} size={44} banner /><div><h1>{school.name}</h1><p>School Hub · Football · Recruiting · Basketball</p><span className="free-note">✓ 100% Free · No Paywalls</span></div></div>
         {school.xHandle && <div className="school-banner-social">
           <XAccountLink handle={school.xHandle} className="school-follow-pill" label={`Follow @${school.xHandle}`}
             compactLabel={school.xHandle.length > 12 ? `@${school.xHandle}` : undefined} />
@@ -44,7 +44,8 @@ export default async function SchoolPage({ params }: { params: Promise<{ slug: s
       </div>
       <nav className="editorial-breadcrumb school-breadcrumb" aria-label="Breadcrumb"><Link href="/">Home</Link><span aria-hidden="true">›</span><Link href="/schools">Schools</Link><span aria-hidden="true">›</span><span aria-current="page">{school.name}</span></nav>
       <div className="school-hub-grid">
-        <div>{lead ? <Story article={lead} lead schoolLead /> : <p>No {school.name} articles have been published yet.</p>}
+        <div>{!articles.length && <h2 className="national-feed-label">Latest National Coverage</h2>}
+          {lead ? <Story article={lead} lead schoolLead={Boolean(articles.length)} /> : <p>No articles have been published yet.</p>}
           {latest.length > 0 && <SchoolStoryList articles={latest} />}
         </div>
         <aside className="school-hub-rail"><SchoolBeatCard school={school} /><LiveBoards light /></aside>

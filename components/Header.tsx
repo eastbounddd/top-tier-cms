@@ -3,10 +3,11 @@ import Image from "next/image";
 import { topTierLogo } from "@/lib/brand";
 import { BreakingBar } from "@/components/BreakingBar";
 import { MobileNavigation } from "@/components/MobileNavigation";
+import { ActiveNavLink } from "@/components/ActiveNavLink";
 
 const links = [
   ["/articles", "Latest"], ["/college-football", "College Football"],
-  ["/college-football#live-boards", "Boards"], ["/schools", "Schools"],
+  ["/boards", "Boards"], ["/schools", "Schools"],
   ["/recruiting", "Recruiting"], ["/writers", "Writers"],
 ] as const;
 
@@ -16,7 +17,7 @@ export function Header() {
       <div className="shell editorial-nav">
         <Link href="/" className="editorial-brand"><Image {...topTierLogo} alt="Top Tier" sizes="50px" priority /></Link>
         <nav className="editorial-desktop-nav" aria-label="Main navigation">
-          {links.map(([href, label]) => <Link key={href} href={href}>{label}</Link>)}
+          {links.map(([href, label]) => <ActiveNavLink key={href} href={href} label={label} />)}
         </nav>
         <Link className="editorial-subscribe" href="/#newsletter">Subscribe</Link>
         <MobileNavigation links={links} />

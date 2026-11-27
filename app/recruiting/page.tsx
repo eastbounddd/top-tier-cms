@@ -1,39 +1,30 @@
-import { pageMetadata } from "@/lib/pageMetadata";
-import { attachWriters } from "@/lib/writers";
-import type { Metadata } from "next";
-import { ArticleCard } from "@/components/ArticleCard";
+import Link from "next/link";
 import { Footer } from "@/components/Footer";
 import { Header } from "@/components/Header";
-import { createClient } from "@/lib/supabase/server";
+import { NewsFeed } from "@/components/NewsFeed";
+import { schoolByName, stories } from "@/lib/editorial";
+import { pageMetadata } from "@/lib/pageMetadata";
 
-export const metadata: Metadata = pageMetadata("Recruiting", "The latest college football recruiting news, analysis, and original reporting from Top Tier.", "/recruiting");
+export const metadata = pageMetadata("Recruiting", "Free college football recruiting intel, flip watch, and scoops from Top Tier.", "/recruiting");
+export const dynamic = "force-static";
+export const revalidate = 60;
 
 export default async function RecruitingPage() {
-  const supabase = await createClient();
-  const { data: rows } = await supabase
-    .from("articles")
-    .select("*")
-    .eq("status", "published")
-    .eq("school", "Recruiting")
-    .order("published_at", { ascending: false });
-
-  const articles = await attachWriters(supabase, rows ?? []);
-  return <>
-    <Header />
-    <main id="main-content" className="school-page shell">
-      <div className="schools-heading">
-        <small>TOP TIER RECRUITING COVERAGE</small>
-        <h1>Recruiting</h1>
-        <p>The latest college football recruiting news, analysis, and original reporting.</p>
-      </div>
-      {articles?.length ? (
-        <div className="news-grid">
-          {articles.map((article) => <ArticleCard key={article.id} article={article} />)}
-        </div>
-      ) : (
-        <div className="school-empty">No Recruiting articles have been published yet.</div>
-      )}
-    </main>
-    <Footer />
-  </>;
+  const archive = await stories({ limit: null });
+  const articles = archive.filter(article => article.school === "Recruiting" || article.category === "Recruiting" ||
+    /\b(?:recruiting|commit(?:ment|s|ted)?|flip(?:s|ped)?|prospect)\b/i.test(article.title));
+  const hubs = new Map(["LSU", "Alabama", "Georgia", "Florida State", "Texas", "Oklahoma"].map(name => [name, schoolByName(name)!]));
+  for (const article of articles) {
+    const school = schoolByName(article.school);
+    if (school) hubs.set(school.name, school);
+  }
+  const writers = [...new Map(articles.flatMap(article => article.writer ? [[article.writer.id, article.writer] as const] : [])).values()].slice(0, 5);
+  const rail = <aside className="editorial-rail">
+    <section className="rail-card"><h2>Recruiting School Hubs</h2><ul>{[...hubs.values()].slice(0, 7).map(school => <li key={school.slug}><Link href={`/schools/${school.slug}`}>{school.name}</Link></li>)}</ul></section>
+    {writers.length > 0 && <section className="rail-card"><h2>Follow Recruiting Writers</h2><ul>{writers.map(writer => <li key={writer.id}><Link href={`/writers/${writer.slug}`}>{writer.name}</Link></li>)}</ul></section>}
+  </aside>;
+  return <><Header /><main id="main-content" className="editorial shell newsroom-index">
+    <section className="newsroom-heading"><small>Top Tier Recruiting Coverage</small><span className="free-note">✓ 100% Free · No Paywalls</span><h1>Recruiting</h1><p>Free college football recruiting intel, flip watch, and scoops—never behind a paywall.</p></section>
+    <NewsFeed articles={articles} recruiting rail={rail} />
+  </main><Footer /></>;
 }

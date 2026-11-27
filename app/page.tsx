@@ -2,7 +2,7 @@ import Link from "next/link";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { UpcomingGames } from "@/components/UpcomingGames";
-import { EditorialNewsletter, JsonLd, LiveBoards, MoreStories, Story, StoryGrid, TeamGrid, WritersStrip } from "@/components/Editorial";
+import { EditorialNewsletter, JsonLd, LiveBoards, MoreStories, Story, StoryGrid, TeamGrid } from "@/components/Editorial";
 import { footballCategories, stories, storyList } from "@/lib/editorial";
 import { pageMetadata } from "@/lib/pageMetadata";
 
@@ -24,29 +24,25 @@ export default async function Home() {
   const used = new Set([lead?.id, ...latest.map(article => article.id)]);
   const recruits = recruiting.filter(article => !used.has(article.id)).slice(0, 2);
   const eligible = articles.filter(article => article.id !== lead?.id && footballCategories.includes(article.category));
-  const moreFootball = [...eligible.filter(article => !used.has(article.id)), ...eligible.filter(article => used.has(article.id))].slice(0, 4);
-  const writers = [...new Map(articles.flatMap(article => article.writer ? [[article.writer.id, article.writer] as const] : [])).values()].slice(0, 4);
+  const moreFootball = eligible.slice(0, 9);
   return <>
     <Header />
     <main id="main-content" className="editorial shell">
       <h1 className="editorial-kicker">{headline}</h1>
       <div className="newsroom-grid">
         {lead ? <Story article={lead} lead /> : <p>No stories have been published yet.</p>}
-        <aside className="newsroom-rail"><LiveBoards id="live-boards" /><MoreStories title="More College Football" articles={moreFootball} /></aside>
+        <aside className="newsroom-rail"><LiveBoards id="live-boards" /><MoreStories title="More College Football" articles={moreFootball} expanded /></aside>
       </div>
       <UpcomingGames />
       <TeamGrid />
       <section className="editorial-section">
-        <div className="editorial-heading"><h2>Latest</h2><Link href="/articles">All articles →</Link></div>
+        <div className="editorial-heading"><h2>Latest News</h2><Link href="/articles">All articles →</Link></div>
         <StoryGrid articles={latest} />
       </section>
-      <div className={recruits.length ? "editorial-bottom-grid" : undefined}>
         {recruits.length > 0 && <section className="editorial-section">
           <div className="editorial-heading"><h2>Recruiting</h2><Link href="/recruiting">More recruiting →</Link></div>
           <StoryGrid articles={recruits} />
         </section>}
-        <WritersStrip writers={writers} />
-      </div>
       <EditorialNewsletter />
     </main>
     <Footer newsletter={false} />
