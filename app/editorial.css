@@ -145,6 +145,7 @@ body:has(.editorial){background:var(--tt-paper);color:#18181b}
 .school-banner-identity{display:flex;align-items:center;gap:12px;padding-bottom:12px}
 .school-banner-identity .badge-44:not(.school-badge-logo){background:var(--school-follow-fill);color:var(--school-follow-ink)}
 .school-banner-identity .school-badge-logo{padding:0}
+.school-banner-identity .school-badge-on-white{background:#fff;padding:4px}
 .school-banner h1{margin:0;font-size:28px;letter-spacing:.04em}
 .school-banner p{margin:3px 0 0;color:var(--school-banner-muted);font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase}
 .school-banner :is(h1,p,.school-banner-social>span){background:transparent;box-shadow:none;text-shadow:var(--school-banner-shadow,none);width:fit-content}
@@ -377,3 +378,7 @@ body:has(.editorial){background:var(--tt-paper);color:#18181b}
   .editor-form .two-col { grid-template-columns: minmax(0, 1fr); }
   .editor-form .rich-editor { padding: 16px; }
 }
+
+.preferred-source-pill{box-sizing:border-box;display:flex;width:100%;align-items:center;justify-content:center;gap:10px;margin:16px 0;padding:10px 20px;border-radius:9999px;font-size:15px;font-weight:600;letter-spacing:-.025em;line-height:1.4;text-align:center;transition:opacity .15s ease}
+.preferred-source-pill:hover{opacity:.9}
+.preferred-source-pill-icon{display:grid;place-items:center;flex:none;width:22px;height:22px;border-radius:50%;background:#fff}

@@ -14,6 +14,7 @@ import { RenderedArticleContent } from "@/components/RenderedArticleContent";
 import { ArticleShare } from "@/components/ArticleShare";
 import { ArticleRecirculation } from "@/components/ArticleRecirculation";
 import { PreferredSource } from "@/components/PreferredSource";
+import { PreferredSourceButton } from "@/components/PreferredSourceButton";
 import { EditorialNewsletter, JsonLd, LiveBoards, MoreStories, QuickJump, SchoolBeatCard } from "@/components/Editorial";
 import { articlePath, editorialClient, editorialDate, itemList, legacyArticleSlug, schoolByName, stories } from "@/lib/editorial";
 import { articlePresentation } from "@/lib/articlePresentation";
@@ -172,6 +173,7 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
             </div>
             <ArticleShare title={data.title} url={canonical} xUrl={getXShareArticleUrl(data.slug, image)} />
           </div>
+          <PreferredSourceButton school={school} />
           {data.cover_image_url && <figure className="editorial-cover">
             <div className="article-cover-frame">
               <Image width={coverWidth} height={coverHeight} sizes="(max-width: 820px) 100vw, 700px"

@@ -1,8 +1,9 @@
 import { existsSync } from "node:fs";
 import { join } from "node:path";
 import type { CSSProperties } from "react";
+import { getSchoolBySlug } from "@/lib/schools";
 
-type SchoolColors = { primary: string; secondary: string; abbr: string; dark?: string; banner?: string; whiteBannerText?: boolean; whiteBannerLogo?: boolean; followInk?: string; logoSrc?: string };
+type SchoolColors = { primary: string; secondary: string; abbr: string; dark?: string; banner?: string; whiteBannerText?: boolean; whiteBannerLogo?: boolean; bannerLogoBadge?: boolean; followInk?: string; logoSrc?: string };
 
 export const SCHOOL_COLORS: Record<string, SchoolColors> = {
   alabama: { primary: "#9E1B32", secondary: "#FFFFFF", whiteBannerText: true, abbr: "ALA" },
@@ -61,7 +62,17 @@ export const SCHOOL_COLORS: Record<string, SchoolColors> = {
 };
 
 const defaultColors: SchoolColors = { primary: "#C81E25", secondary: "#FFFFFF", abbr: "TT" };
-export const schoolColors = (slug?: string) => SCHOOL_COLORS[slug ?? ""] ?? defaultColors;
+export function schoolColors(slug?: string): SchoolColors {
+  const brand = slug ? getSchoolBySlug(slug)?.brand : undefined;
+  return brand ? {
+    primary: brand.primary,
+    secondary: brand.secondary,
+    abbr: brand.shortName,
+    banner: brand.banner,
+    bannerLogoBadge: !brand.banner,
+    logoSrc: `https://a.espncdn.com/i/teamlogos/ncaa/500/${brand.espnId}.png`,
+  } : SCHOOL_COLORS[slug ?? ""] ?? defaultColors;
+}
 
 const luminance = (hex: string) => [1, 3, 5].reduce((value, start, index) => {
   const channel = parseInt(hex.slice(start, start + 2), 16) / 255;
@@ -72,6 +83,15 @@ const contrast = (a: string, b: string) => {
   const [light, dark] = [luminance(a), luminance(b)].sort((x, y) => y - x);
   return (light + 0.05) / (dark + 0.05);
 };
+
+export function schoolPrimaryPill(slug?: string) {
+  const backgroundColor = slug ? schoolColors(slug).primary : "#111111";
+  const whiteContrast = contrast("#FFFFFF", backgroundColor);
+  const useDarkText = luminance(backgroundColor) > 0.62 ||
+    (whiteContrast < 4.5 && contrast("#111111", backgroundColor) > whiteContrast);
+  const color = useDarkText ? "#111111" : "#FFFFFF";
+  return { backgroundColor, color };
+}
 
 export function schoolTheme(slug?: string): CSSProperties {
   const { primary, secondary, dark, banner, whiteBannerText, followInk: preferredFollowInk } = schoolColors(slug);

@@ -61,10 +61,12 @@ export function QuickJump({ ranks }: { ranks: { anchor: string; number: number; 
 export function SchoolBadge({ school, size, alt = "", banner = false }: {
   school: SchoolBeat; size: 20 | 28 | 44; alt?: string; banner?: boolean;
 }) {
-  const white = banner && schoolColors(school.slug).whiteBannerLogo;
+  const colors = schoolColors(school.slug);
+  const white = banner && colors.whiteBannerLogo;
+  const badge = banner && colors.bannerLogoBadge;
   const logo = banner && !white ? schoolBannerLogo(school.slug) : schoolLogo(school.slug);
-  return <span className={`school-badge badge-${size}${logo ? " school-badge-logo" : ""}${logo && white ? " school-badge-white" : ""}`} aria-hidden={logo && alt ? undefined : true}>
-    {logo ? <Image src={logo} alt={alt} width={size} height={size} unoptimized /> : schoolColors(school.slug).abbr}
+  return <span className={`school-badge badge-${size}${logo ? " school-badge-logo" : ""}${logo && white ? " school-badge-white" : ""}${logo && badge ? " school-badge-on-white" : ""}`} aria-hidden={logo && alt ? undefined : true}>
+    {logo ? <Image src={logo} alt={alt} width={size} height={size} unoptimized /> : colors.abbr}
   </span>;
 }
 
