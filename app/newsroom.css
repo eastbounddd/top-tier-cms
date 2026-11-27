@@ -5,7 +5,7 @@
 .newsroom-heading>small{font:800 15px var(--font-display),sans-serif;color:var(--tt-red);text-transform:uppercase;letter-spacing:.06em}
 .newsroom-heading h1{font-size:clamp(42px,7vw,70px);line-height:.96;margin:6px 0 8px}
 .newsroom-heading p{margin:0 0 9px;color:#52525b;line-height:1.5}
-.newsroom-heading a,.directory-card-actions>a:first-child,.board-directory-card>a{font-size:13px;font-weight:700;color:var(--school-ink,var(--tt-hover))}
+.newsroom-heading a,.directory-card-actions>a:first-child{font-size:13px;font-weight:700;color:var(--school-ink,var(--tt-hover))}
 .directory-controls{display:grid;gap:12px;margin-bottom:18px}
 .directory-controls input{box-sizing:border-box;display:block;width:min(100%,580px);padding:11px 13px;margin:0;background:#fff;border:1px solid #d1d5db;border-radius:8px;color:#111;font-size:16px}
 .directory-controls input:focus-visible,.filter-pills button:focus-visible{outline:2px solid var(--tt-red);outline-offset:2px}
@@ -16,7 +16,7 @@
 .directory-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
 .directory-grid>div,.board-directory>div{min-width:0}
 .directory-card{box-sizing:border-box;background:white;border:1px solid var(--tt-border);border-top:4px solid var(--school-primary,var(--tt-red));border-radius:10px;padding:15px;min-width:0}
-.directory-grid .directory-card,.board-directory .directory-card{height:100%;display:flex;flex-direction:column;align-items:flex-start}
+.directory-grid .directory-card{height:100%;display:flex;flex-direction:column;align-items:flex-start}
 .directory-card h2{font-size:24px;line-height:1.04;margin:10px 0 5px}
 .directory-card h2 a:hover,.directory-card-actions a:hover,.newsroom-copy a:hover,.recirc-card:hover strong{text-decoration:underline;text-underline-offset:3px}
 .directory-card p{margin:0 0 8px;color:#52525b;font-size:13px;line-height:1.5;overflow-wrap:anywhere}
@@ -57,8 +57,19 @@
 .newsroom-card-footer a{font-weight:700;color:var(--tt-hover)}
 .newsroom-more{display:block;margin:15px auto 0;border:1px solid var(--tt-border);border-radius:8px;background:white;padding:9px 13px;color:#111;font-weight:700;cursor:pointer}
 .recruiting-layout{display:grid;grid-template-columns:minmax(0,68fr) minmax(0,32fr);gap:18px;align-items:start}
-.recruiting-layout .newsroom-feed,.board-directory{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
-.board-directory-card>a{margin-top:auto}
+.recruiting-layout .newsroom-feed{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.board-directory{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.board-tracker-section .editorial-heading{margin-bottom:10px}
+.board-tracker-section .directory-controls{margin-bottom:10px}
+.board-directory-card{box-sizing:border-box;height:100%;display:flex;flex-direction:column;overflow:hidden;background:#fff;border:1px solid var(--tt-border);border-top:3px solid var(--tt-red);border-radius:10px}
+.board-tracker-header{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:10px 14px;background:#111;color:#fff;font-size:12px;font-weight:700}
+.board-live-label{padding:2px 7px;border-radius:999px;background:#3c1519;color:#fecaca;font-size:10px;text-transform:uppercase;letter-spacing:.05em}
+.board-tracker-content{display:flex;flex:1;flex-direction:column;padding:13px 14px}
+.board-tracker-content h3{margin:0;font-size:24px;line-height:1.08}
+.board-tracker-content p{margin:6px 0 10px;color:#52525b;font-size:13px;line-height:1.5;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden}
+.board-tracker-meta{display:flex;flex-wrap:wrap;align-items:center;gap:5px 8px;color:#52525b;font-size:12px}
+.board-tracker-link{align-self:flex-start;margin-top:auto;padding-top:10px;color:var(--tt-hover);font-size:13px;font-weight:700}
+.board-tracker-link:hover,.board-tracker-content h3 a:hover{text-decoration:underline;text-underline-offset:3px}
 .free-note{display:inline-flex;width:max-content;max-width:100%;align-items:center;margin:4px 0 0 9px;border-radius:999px;background:#fef2f2;color:#a5181e;padding:3px 7px;font-weight:700;font-size:10px;text-transform:uppercase;white-space:nowrap}
 .school-banner .free-note{margin:5px 0 0;background:rgba(0,0,0,.22);color:#fff;text-shadow:0 1px 2px rgba(0,0,0,.18)}
 .national-feed-label{margin:0 0 7px;font-size:20px}

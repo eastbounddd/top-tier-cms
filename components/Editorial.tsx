@@ -5,7 +5,7 @@ import { NewsletterSignup } from "@/components/NewsletterSignup";
 import { XAccountLink } from "@/components/XAccountLink";
 import { SchoolBeatAvatar } from "@/components/SchoolBeatAvatar";
 import { StoryImage } from "@/components/StoryImage";
-import { articlePath, boards, editorialDate, itemList, schoolByName } from "@/lib/editorial";
+import { articlePath, editorialDate, itemList, liveTrackers, schoolByName } from "@/lib/editorial";
 import { featuredSchoolCount, schools, type SchoolBeat } from "@/lib/schools";
 import { schoolBannerLogo, schoolColors, schoolLogo, schoolTheme, schoolXAvatar } from "@/lib/schoolColors";
 import { schemaJson } from "@/lib/structuredData";
@@ -14,11 +14,23 @@ export function JsonLd({ data }: { data: unknown }) {
   return <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: schemaJson(data) }} />;
 }
 
-export function LiveBoards({ id, light = false }: { id?: string; light?: boolean }) {
+export function LiveStatusDot() {
+  return <span className="boards-live-dot" aria-hidden="true" />;
+}
+
+export async function LiveBoards({ id, light = false }: { id?: string; light?: boolean }) {
+  const trackers = await liveTrackers();
   return <section className={light ? "live-boards live-boards-light" : "live-boards"} id={id}>
-    <div className="rail-heading"><h2>Live Boards</h2><span className="board-updated">Updated daily</span></div>
-    <ul>{boards.map(board => <li key={board.path}><Link href={board.path}><strong>{board.name}</strong><span>{board.detail}</span></Link></li>)}</ul>
-    <JsonLd data={itemList("Live Boards", boards)} />
+    <div className="rail-heading"><h2><LiveStatusDot /> Live Boards</h2></div>
+    <ul>{trackers.map(board => <li key={board.path}>
+      <Link href={board.path} className="live-board-row">
+        <div className="live-board-copy"><strong>{board.name}</strong><span className="live-board-description">{board.detail}</span>
+          {board.stat && <span className="board-stat">{board.stat}</span>}
+        </div>
+        <span className="live-board-arrow" aria-hidden="true">{"\u2192"}</span>
+      </Link>
+    </li>)}</ul>
+    <JsonLd data={itemList("Live Boards", trackers)} />
   </section>;
 }
 

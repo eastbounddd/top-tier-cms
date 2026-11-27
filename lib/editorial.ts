@@ -1,3 +1,5 @@
+import { cache } from "react";
+import { trackerStat, type TrackerMetric } from "@/lib/trackerStats";
 import { publicArticles } from "@/lib/articleWorkflow";
 import { createClient } from "@supabase/supabase-js";
 import type { Article } from "@/components/ArticleCard";
@@ -9,10 +11,10 @@ import { articlePath, legacyArticleSlug } from "@/lib/articlePaths";
 export { articlePath, legacyArticleSlug } from "@/lib/articlePaths";
 
 export const boards = [
-  { name: "CFP Bubble & Bye Board", detail: "Projected bracket, first-round byes and bubble teams.", path: "/articles/2026-college-football-playoff-picture-bubble-watch-projected-bracket" },
-  { name: "Coaching Carousel Tracker", detail: "FBS hires, firings and open jobs.", path: "/articles/2026-college-football-coaching-carousel-tracker" },
-  { name: "Bowl Eligibility Tracker", detail: "Who has clinched and who still needs a win.", path: "/articles/2026-college-football-bowl-eligibility-tracker" },
-];
+  { metric: "playoff", topic: "Playoff", name: "CFP Bubble & Bye Board", detail: "Projected bracket, first-round byes and bubble teams.", path: "/articles/2026-college-football-playoff-picture-bubble-watch-projected-bracket" },
+  { metric: "coaching", topic: "Coaching Carousel", name: "Coaching Carousel Tracker", detail: "FBS hires, firings and open jobs.", path: "/articles/2026-college-football-coaching-carousel-tracker" },
+  { metric: "bowl", topic: "Bowl Eligibility", name: "Bowl Eligibility Tracker", detail: "Who has clinched and who still needs a win.", path: "/articles/2026-college-football-bowl-eligibility-tracker" },
+] as const satisfies readonly { metric: TrackerMetric; topic: string; name: string; detail: string; path: string }[];
 
 const schoolAliases: Record<string, string> = { "mizzou": "missouri", "wvu": "west-virginia", "florida st": "fsu", "mississippi st": "mississippi-state", "southern california": "usc" };
 export const schoolByName = (name?: string | null) => {
@@ -27,6 +29,24 @@ export function editorialClient() {
     global: { fetch: (input, init) => fetch(input, { ...init, next: { revalidate: 60 } }) },
   });
 }
+
+export const liveTrackers = cache(async () => {
+  const slugs = boards.map(board => board.path.slice("/articles/".length));
+  const { data, error } = await editorialClient().from("articles")
+    .select("slug,title,excerpt,body,updated_at")
+    .in("slug", slugs).or(publicArticles());
+  if (error) console.warn("Unable to load live tracker metadata:", error.message);
+  const articles = new Map((data ?? []).map(article => [article.slug, article]));
+  return boards.map(board => {
+    const article = articles.get(board.path.slice("/articles/".length));
+    const updatedAt = article?.updated_at;
+    return {
+      ...board,
+      stat: article ? trackerStat(board.metric, article) : undefined,
+      updatedAt: updatedAt && Number.isFinite(Date.parse(updatedAt)) ? updatedAt : undefined,
+    };
+  });
+});
 
 export async function stories({ school, football, basketball, recruiting, category, titleContains, writerId, limit = 24 }: {
   school?: string; football?: boolean; basketball?: boolean; recruiting?: boolean; category?: string; titleContains?: string; writerId?: string; limit?: number | null;
