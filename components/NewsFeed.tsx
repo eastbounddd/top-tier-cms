@@ -6,9 +6,10 @@ import type { Article } from "@/components/ArticleCard";
 import { articlePath } from "@/lib/articlePaths";
 import { StoryImage } from "@/components/StoryImage";
 
-export function NewsCard({ article, featured = false }: { article: Article; featured?: boolean }) {
+export function NewsCard({ article, featured = false, secondary = false }: { article: Article; featured?: boolean; secondary?: boolean }) {
   const path = articlePath(article.slug);
   const author = article.writer?.name || (typeof article.body === "object" && article.body?.author_name);
+  const date = article.published_at && new Intl.DateTimeFormat("en-US", { timeZone: "America/Chicago", month: "short", day: "numeric", ...(!secondary ? { year: "numeric" } : {}) }).format(new Date(article.published_at));
   const Heading = featured ? "h2" : "h3";
   return <article className={`newsroom-card${featured ? " newsroom-featured" : ""}`}>
     <Link href={path} className="newsroom-photo" tabIndex={-1} aria-hidden="true">
@@ -16,13 +17,14 @@ export function NewsCard({ article, featured = false }: { article: Article; feat
     </Link>
     <div className="newsroom-copy">
       <div className="newsroom-meta"><b>{featured && "Featured · "}{article.category}</b>
-        {article.published_at && <time dateTime={article.published_at}>{new Intl.DateTimeFormat("en-US", { timeZone: "America/Chicago", month: "short", day: "numeric", year: "numeric" }).format(new Date(article.published_at))}</time>}
+        {date && <time dateTime={article.published_at ?? undefined}>{date}</time>}
       </div>
       <Heading><Link href={path}>{article.title}</Link></Heading>
       {article.excerpt && <p>{article.excerpt}</p>}
       <div className="newsroom-card-footer">
-        {author && <span>By {article.writer ? <Link href={`/author/${article.writer.slug}`}>{author}</Link> : author}</span>}
-        <Link href={path} tabIndex={-1} aria-hidden="true">{featured ? "Read Story →" : "Read →"}</Link>
+        {author && <span>{!secondary && "By "}{article.writer ? <Link href={`/author/${article.writer.slug}`}>{author}</Link> : author}</span>}
+        {secondary ? date && <time dateTime={article.published_at ?? undefined}>{author && "· "}{date}</time>
+          : <Link href={path} tabIndex={-1} aria-hidden="true">{featured ? "Read Story →" : "Read →"}</Link>}
       </div>
     </div>
   </article>;
