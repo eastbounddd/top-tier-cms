@@ -51,6 +51,7 @@ export async function POST(request: Request) {
   }
   return NextResponse.json({
     url: bucket.getPublicUrl(output).data.publicUrl,
+    originalWidth: cropped.originalWidth,
     upscaled: cropped.upscaled,
   });
 }

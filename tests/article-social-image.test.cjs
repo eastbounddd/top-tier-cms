@@ -33,10 +33,11 @@ test('social endpoint converts WebP images into a visible PNG', async () => {
   const sharp = require('sharp');
   const source = await sharp({create:{width:100,height:100,channels:3,background:'#ef1234'}}).webp().toBuffer();
   let data = {cover_image_url:'https://example.com/photo.webp',body:''};
-  const query = { select() { return this; }, eq() { return this; }, async single() { return { data }; } };
+  const query = { select() { return this; }, eq() { return this; }, or(value) { assert.match(value, /status.eq.scheduled,published_at.lte./); return this; }, async single() { return { data }; } };
   const { GET } = load('app/social-images/[slug]/route.tsx', {
     '@/lib/articleSocialImage': images,
     '@/lib/articleCover': covers,
+    '@/lib/articleWorkflow': load('lib/articleWorkflow.ts'),
     '@/lib/supabase/server': { createClient: async () => ({ from: () => query }) },
   });
   const originalFetch = global.fetch;

@@ -18,6 +18,7 @@ export async function normalizeArticleCover(input: Buffer) {
   }
   return {
     bytes: await image.webp({ quality: 85 }).toBuffer(),
+    originalWidth: width,
     upscaled: width < coverWidth || height < coverHeight,
   };
 }

@@ -39,7 +39,7 @@ gtag('js', new Date());
 gtag('config', 'G-EC1F990094');`}
         </Script>
       </head>
-      <body><a className="skip-link" href="#main-content">Skip to main content</a>{children}<script type="application/ld+json" dangerouslySetInnerHTML={{__html:schemaJson({"@context":"https://schema.org","@graph":[{"@type":["NewsMediaOrganization","Organization"],"@id":"https://www.toptierstate.net/#organization",name:"Top Tier",url:"https://www.toptierstate.net",logo:{"@type":"ImageObject",url:`https://www.toptierstate.net${topTierLogo.src}`,width:topTierLogo.width,height:topTierLogo.height},sameAs:["https://x.com/TopTierStateX","https://www.instagram.com/TopTierState","https://www.tiktok.com/@TopTierState"]},{"@type":"WebSite",name:"Top Tier",url:"https://www.toptierstate.net",publisher:{"@id":"https://www.toptierstate.net/#organization"}}]})}}/><Analytics /></body>
+      <body><a className="skip-link" href="#main-content">Skip to main content</a>{children}<script type="application/ld+json" dangerouslySetInnerHTML={{__html:schemaJson({"@context":"https://schema.org","@graph":[{"@type":["NewsMediaOrganization","Organization"],"@id":"https://www.toptierstate.net/#organization",name:"Top Tier Media",alternateName:"Top Tier",url:"https://www.toptierstate.net",logo:{"@type":"ImageObject",url:`https://www.toptierstate.net${topTierLogo.src}`,width:topTierLogo.width,height:topTierLogo.height},sameAs:["https://x.com/TopTierStateX","https://www.instagram.com/TopTierState","https://www.tiktok.com/@TopTierState"]},{"@type":"WebSite",name:"Top Tier",url:"https://www.toptierstate.net",publisher:{"@id":"https://www.toptierstate.net/#organization"}}]})}}/><Analytics /></body>
     </html>
   );
 }

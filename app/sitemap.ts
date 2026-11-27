@@ -1,3 +1,4 @@
+import { publicArticles } from "@/lib/articleWorkflow";
 import type { MetadataRoute } from "next";
 import { createClient } from "@supabase/supabase-js";
 import { schools } from "@/lib/schools";
@@ -34,7 +35,7 @@ async function getPublishedArticles() {
     const { data, error } = await supabase
       .from("articles")
       .select("*")
-      .eq("status", "published")
+      .or(publicArticles())
       .not("slug", "is", null)
       .order("published_at", { ascending: false })
       .range(from, from + pageSize - 1);

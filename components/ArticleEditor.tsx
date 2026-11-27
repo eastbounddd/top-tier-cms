@@ -6,12 +6,24 @@ import {
   useRef,
   useState,
 } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import Image from "next/image";
+import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { saveArticle } from "@/app/dashboard/new/actions";
 import { articleSchoolOptions } from "@/lib/schools";
 import { RenderedArticleContent } from "@/components/RenderedArticleContent";
 import { isXStatusUrl, renderStandaloneXLinks } from "@/lib/renderXLinks";
+
+import { ArticlePicker, PromoEditor, schoolPromo, type SearchResult } from "@/components/ArticleInsertDialogs";
+import { escapeHtml, followPromo, promoHtml, safeArticleUrl, videoHtml, withFollowPromo, type Promo } from "@/lib/articleBlocks";
+import { PreferredSource } from "@/components/PreferredSource";
+
+const templates = {
+  "Breaking News": ["What Happened", "Why It Matters", "What’s Next"],
+  "Game Preview / Watch Guide": ["How to Watch", "Kickoff Time & TV Channel", "Key Matchups", "Prediction"],
+  "Recruiting / Portal Update": ["The Latest", "Scouting Report", "What It Means"],
+  "Rankings / List": ["Ranking Criteria", "The Rankings", "What Stands Out"],
+};
 
 const slugify = (s: string) =>
   s
@@ -32,11 +44,43 @@ type FormState = {
   status: string;
 };
 
+const escapeAttribute = (value: string) =>
+  value.replace(/&/g, "&amp;").replace(/"/g, "&quot;");
+
+const createEditorXPreview = (url: string) => {
+  const safeUrl = escapeAttribute(url);
+  const tweetId = url.match(/\/status\/(\d+)/i)?.[1] || "";
+  const embedUrl = escapeAttribute(
+    `https://platform.twitter.com/embed/Tweet.html?id=${tweetId}&dnt=true&lang=en&theme=light&hideCard=false&hideThread=false`
+  );
+  return `<div class="x-editor-tweet-preview" contenteditable="false" data-x-url="${safeUrl}"><iframe class="x-post-frame" src="${embedUrl}" title="Embedded post on X" loading="lazy" scrolling="yes"></iframe><a class="x-post-source-link" href="${safeUrl}" target="_blank" rel="noopener noreferrer">View post on X</a></div>`;
+};
+
 const articleUnavailable = "Article not found or you don't have permission to save it.";
 
-export function ArticleEditor() {
-  const params = useSearchParams();
-  const id = params.get("id");
+export function ArticleEditor({ initialId, editorRole, displayName }: {
+  initialId: string | null; editorRole: boolean; displayName: string;
+}) {
+  const id = useRef(initialId);
+  const hydratedId = useRef<string | null>(null);
+  const saving = useRef(false);
+  const lastSave = useRef("");
+  const changes = useRef(0);
+  const savedChanges = useRef(0);
+  const markChanged = () => { changes.current += 1; };
+  const [savedAt, setSavedAt] = useState("");
+  const [tab, setTab] = useState("Article");
+  const [metadata, setMetadata] = useState({
+    cover_alt: "", cover_credit: "", cover_width: 0, secondary_school: "", takeaways: ["", "", ""],
+    auto_follow: false, preferred_source: true,
+  });
+  const updatedAt = useRef<string | null>(null);
+  const [schedule, setSchedule] = useState("");
+  const [picker, setPicker] = useState<"link" | "related" | null>(null);
+  const [promo, setPromo] = useState<{ value: Promo; node?: HTMLElement } | null>(null);
+  const [dragging, setDragging] = useState(false);
+  const setMeta = <K extends keyof typeof metadata>(key: K, value: (typeof metadata)[K]) =>
+    setMetadata(current => ({ ...current, [key]: value }));
   const router = useRouter();
   const editor = useRef<HTMLDivElement>(null);
   const mediaInput = useRef<HTMLInputElement>(null);
@@ -59,7 +103,7 @@ export function ArticleEditor() {
     status: "draft",
   });
   const [editorHtml, setEditorHtml] = useState("");
-  const [authorName, setAuthorName] = useState("");
+  const [authorName, setAuthorName] = useState(displayName);
   const [writerId, setWriterId] = useState("");
   const [writers, setWriters] = useState<{id:string;name:string}[]>([]);
   useEffect(() => { createClient().from("writer_profiles").select("id,name").order("name").then(({data}) => setWriters(data || [])); }, []);
@@ -83,14 +127,17 @@ export function ArticleEditor() {
   };
 
   useEffect(() => {
-    if (!id) return;
+    const requestedId = initialId;
+    // The first autosave updates the URL without reloading the in-progress draft.
+    if (!requestedId || hydratedId.current === requestedId) return;
     const supabase = createClient();
     let active = true;
+
 
     supabase
       .from("articles")
       .select("*")
-      .eq("id", id)
+      .eq("id", requestedId)
       .maybeSingle()
       .then(({ data, error }) => {
         if (!active) return;
@@ -103,6 +150,7 @@ export function ArticleEditor() {
           return;
         }
 
+        updatedAt.current = data.updated_at ?? null;
         setForm({
           title: data.title || "",
           slug: data.slug || "",
@@ -112,17 +160,30 @@ export function ArticleEditor() {
           cover_image_url: data.cover_image_url || "",
           is_top_story: Boolean(data.is_top_story),
           is_sponsored: Boolean(data.is_sponsored),
-          status: data.status || "draft",
+          status: data.status === "pending_review" ? "ready_for_review" : data.status || "draft",
         });
 
         const html =
           typeof data.body === "object" && data.body?.html
             ? data.body.html
-            : String(data.body || "");
+            : typeof data.body === "string" ? data.body : data.body_html || "";
 
+        const body = data.body;
+        if (body && typeof body === "object") {
+          setMetadata({
+            cover_alt: body.cover_alt || "", cover_credit: body.cover_credit || "",
+            cover_width: Number(body.cover_width) || 0, secondary_school: body.secondary_school || "",
+            takeaways: Array.from({ length: 3 }, (_, index) => String(body.takeaways?.[index] || "")),
+            auto_follow: body.auto_follow === true, preferred_source: body.preferred_source !== false,
+          });
+        }
+        if (data.status === "scheduled" && data.published_at) {
+          setSchedule(new Intl.DateTimeFormat("sv-SE", { timeZone: "America/Chicago", dateStyle: "short", timeStyle: "short" })
+            .format(new Date(data.published_at)).replace(" ", "T"));
+        }
         setWriterId(data.writer_profile_id || "");
         setAuthorName(
-          typeof data.body === "object" ? data.body?.author_name || "" : ""
+          data.body?.author_name || data.author_name || displayName
         );
         setEditorHtml(html);
         requestAnimationFrame(() => {
@@ -131,15 +192,17 @@ export function ArticleEditor() {
             rendered.innerHTML = renderStandaloneXLinks(html);
             rendered.querySelectorAll<HTMLElement>(".x-post-embed").forEach((post) => {
               const url = post.dataset.xUrl || post.querySelector("a")?.href || "";
-              if (url) post.outerHTML = createEditorXPreview(url);
+              if (isXStatusUrl(url)) post.outerHTML = createEditorXPreview(url);
             });
             editor.current.innerHTML = rendered.innerHTML;
-            setLoadedArticleId(id);
+            id.current = requestedId;
+            hydratedId.current = requestedId;
+            setLoadedArticleId(requestedId);
           }
         });
       });
     return () => { active = false; };
-  }, [id]);
+  }, [initialId, displayName]);
 
   useEffect(() => {
     document.addEventListener("selectionchange", rememberEditorSelection);
@@ -242,6 +305,8 @@ export function ArticleEditor() {
       if (!response.ok || !result?.url) throw new Error(result?.error || "The cover image could not be processed.");
       setForm((f) => ({ ...f, cover_image_url: result.url }));
       setCoverUpscaled(result.upscaled);
+      setMeta("cover_width", result.originalWidth || 0);
+      markChanged();
       setMessage("Cover image uploaded. It will be saved with the article.");
     } catch (e: any) {
       setMessage(`Cover upload failed: ${e.message}`);
@@ -278,6 +343,7 @@ export function ArticleEditor() {
     selection?.removeAllRanges();
     selection?.addRange(range);
     savedRange.current = range.cloneRange();
+    markChanged();
     setEditorHtml(serializeEditorHtml());
     return true;
   };
@@ -405,20 +471,9 @@ export function ArticleEditor() {
     selection?.removeAllRanges();
     selection?.addRange(range);
     savedRange.current = range.cloneRange();
+    markChanged();
     setEditorHtml(serializeEditorHtml());
     return true;
-  };
-
-  const escapeAttribute = (value: string) =>
-    value.replace(/&/g, "&amp;").replace(/"/g, "&quot;");
-
-  const createEditorXPreview = (url: string) => {
-    const safeUrl = escapeAttribute(url);
-    const tweetId = url.match(/\/status\/(\d+)/i)?.[1] || "";
-    const embedUrl = escapeAttribute(
-      `https://platform.twitter.com/embed/Tweet.html?id=${tweetId}&dnt=true&lang=en&theme=light&hideCard=false&hideThread=false`
-    );
-    return `<div class="x-editor-tweet-preview" contenteditable="false" data-x-url="${safeUrl}"><iframe class="x-post-frame" src="${embedUrl}" title="Embedded post on X" loading="lazy" scrolling="yes"></iframe><a class="x-post-source-link" href="${safeUrl}" target="_blank" rel="noopener noreferrer">View post on X</a></div>`;
   };
 
   const serializeEditorHtml = () => {
@@ -430,6 +485,7 @@ export function ArticleEditor() {
         preview.dataset.xUrl || preview.querySelector("a")?.getAttribute("href") || "";
       preview.replaceWith(paragraph);
     });
+    clone.querySelectorAll(".cms-promo-controls").forEach(controls => controls.remove());
     clone.querySelectorAll(".media-insertion-marker").forEach((marker) => marker.remove());
     clone.querySelectorAll<HTMLElement>("figcaption.photo-credit").forEach((caption) => {
       const text = caption.textContent?.trim() || "";
@@ -462,7 +518,8 @@ export function ArticleEditor() {
     if (!isXStatusUrl(pastedText)) {
       if (/^https?:\/\/\S+$/i.test(pastedText)) {
         event.preventDefault();
-        const safeUrl = escapeAttribute(pastedText);
+        const safeUrl = escapeHtml(safeArticleUrl(pastedText));
+        if (!safeUrl) return;
         insertHtmlAtCursor(`<a href="${safeUrl}" target="_blank" rel="noopener noreferrer">${safeUrl}</a>`);
       }
       return;
@@ -543,31 +600,38 @@ export function ArticleEditor() {
   const command = (cmd: string, value?: string) => {
     restoreSelection();
     document.execCommand(cmd, false, value);
+    markChanged();
     setEditorHtml(serializeEditorHtml());
   };
 
-  const addLink = () => {
-    const url = window.prompt("Paste the full hyperlink URL:");
-    if (!url) return;
-
-    const selection = window.getSelection();
-    restoreSelection();
-
-    if (selection && !selection.isCollapsed) {
-      document.execCommand("createLink", false, url);
-      document.execCommand("styleWithCSS", false, "false");
-      setEditorHtml(serializeEditorHtml());
-      return;
+  const chooseLink = (item: SearchResult) => {
+    if (picker === "related") {
+      insertHtmlAtCursor(promoHtml({ title: item.title, subtitle: "READ NEXT", button: "Read story →",
+        url: item.url, image: item.image, style: "light", kind: "related" }) + "<p><br></p>");
+    } else if (savedRange.current && !savedRange.current.collapsed) {
+      command("createLink", item.url);
+    } else {
+      insertHtmlAtCursor(`<a href="${escapeHtml(item.url)}">${escapeHtml(item.title)}</a>`);
     }
+    setPicker(null);
+  };
 
-    const text = window.prompt("Link text:", url) || url;
-    insertHtmlAtCursor(
-      `<a href="${url.replace(/"/g, "&quot;")}" target="_blank" rel="noopener noreferrer">${text}</a>`
-    );
+  const showPromo = (value: Promo, node?: HTMLElement) => setPromo({ value, node });
+  const addPromo = (kind: string) => {
+    switch (kind) {
+      case "main": insertHtmlAtCursor(promoHtml(followPromo) + "<p><br></p>"); break;
+      case "school": showPromo(schoolPromo(form.school)); break;
+      case "ig": insertHtmlAtCursor(promoHtml({ title: "Follow @TopTierState on Instagram",
+        subtitle: "509K+ college sports fans. Graphics, highlights, and daily news.", url: "https://instagram.com/toptierstate",
+        button: "Follow", style: "dark" }) + "<p><br></p>"); break;
+      case "related": setPicker("related"); break;
+      case "custom": showPromo({ title: "", subtitle: "", button: "", url: "", style: "light" }); break;
+    }
   };
 
 const deleteArticle = async () => {
-  if (!id) return;
+  const articleId = id.current;
+  if (!articleId) return;
 
   const confirmed = window.confirm(
     "Are you sure you want to permanently delete this article? This cannot be undone."
@@ -583,7 +647,7 @@ const deleteArticle = async () => {
   const { error } = await supabase
     .from("articles")
     .delete()
-    .eq("id", id);
+    .eq("id", articleId);
 
   setBusy(false);
 
@@ -595,8 +659,9 @@ const deleteArticle = async () => {
   router.push("/dashboard");
   router.refresh();
 };
-  const save = async (status: string) => {
-    if (id && loadedArticleId !== id) {
+  const save = async (status: string, autosave = false) => {
+    if (saving.current || busy) return;
+    if (initialId && loadedArticleId !== initialId) {
       setMessage(articleUnavailable);
       return;
     }
@@ -606,7 +671,7 @@ const deleteArticle = async () => {
     }
 
     const articleSlug = form.slug || slugify(form.title);
-    if (status === "published" && (articleSlug.length < 8 || !/^[a-z0-9]+(?:-[a-z0-9]+)+$/.test(articleSlug))) {
+    if (["published", "scheduled"].includes(status) && form.status !== "published" && (articleSlug.length < 8 || !/^[a-z0-9]+(?:-[a-z0-9]+)+$/.test(articleSlug))) {
       setMessage("Use a descriptive URL slug of at least 8 characters with hyphen-separated words.");
       return;
     }
@@ -615,9 +680,6 @@ const deleteArticle = async () => {
       setMessage("Please enter the author name.");
       return;
     }
-
-    setBusy(true);
-    setMessage("");
 
     try {
       const payload = {
@@ -635,167 +697,123 @@ const deleteArticle = async () => {
           html: serializeEditorHtml()
             .replace(/<h1\b[^>]*>/gi, "")
             .replace(/<\/h1>/gi, ""),
+          ...metadata,
+          takeaways: metadata.takeaways.map(text => text.trim()).filter(Boolean).slice(0, 3),
+          secondary_school: metadata.secondary_school === form.school ? "" : metadata.secondary_school,
           author_name: authorName.trim(),
         },
-        ...(status === "published" && form.status !== "published"
-          ? { published_at: new Date().toISOString() }
-          : {}),
+        schedule,
       };
+      const snapshot = JSON.stringify(payload);
+      if (autosave && lastSave.current === snapshot) { savedChanges.current = changes.current; return; }
+      const revision = changes.current;
+      saving.current = true;
+      setBusy(true);
+      setMessage("");
 
-      const { error } = await saveArticle(id, payload);
-      if (error) throw new Error(error);
-
-      router.push("/dashboard");
-      router.refresh();
+      const result = await saveArticle(id.current, payload, updatedAt.current);
+      if (result.error) throw new Error(result.error);
+      updatedAt.current = result.updatedAt ?? null;
+      lastSave.current = snapshot;
+      savedChanges.current = revision;
+      if (!id.current && result.id) {
+        id.current = result.id;
+        hydratedId.current = result.id;
+        setLoadedArticleId(result.id);
+        window.history.replaceState(null, "", "/dashboard/new?id=" + result.id);
+      }
+      setForm(current => ({ ...current, status, slug: current.slug || (changes.current === revision ? articleSlug : "") }));
+      setSavedAt(new Intl.DateTimeFormat("en-US", { hour: "numeric", minute: "2-digit" }).format(new Date()));
     } catch (error) {
       setMessage(`Could not save article: ${error instanceof Error ? error.message : String(error)}`);
     } finally {
+      saving.current = false;
       setBusy(false);
     }
   };
 
   const onEditorInput = () => {
+    markChanged();
     setEditorHtml(serializeEditorHtml());
   };
 
+  const autosaveDraft = useRef<() => void>(() => {});
+  useEffect(() => {
+    autosaveDraft.current = () => {
+      if (changes.current !== savedChanges.current && form.status === "draft" && (!initialId || loadedArticleId === initialId) && form.title.trim() && authorName.trim()) {
+        void save("draft", true);
+      }
+    };
+  });
+  useEffect(() => {
+    const interval = window.setInterval(() => autosaveDraft.current(), 10000);
+    return () => window.clearInterval(interval);
+  }, []);
+
+  const words = editorHtml.replace(/<[^>]*>/g, " ").replace(/&nbsp;/g, " ").trim().split(/\s+/).filter(Boolean).length;
+  const titleInRange = form.title.length >= 50 && form.title.length <= 65;
+  const descriptionInRange = form.excerpt.length >= 120 && form.excerpt.length <= 155;
+  const checks = [
+    [titleInRange, "Headline 50–65 characters"],
+    [descriptionInRange, "Description 120–155 characters"],
+    [metadata.cover_width >= 1200 && metadata.cover_alt.trim() && form.cover_image_url, "Cover source at least 1200px wide with alt text"],
+    [/<h2\b/i.test(editorHtml), "At least one H2"],
+    [/<a\b[^>]*\bhref=["'](?:\/(?![/\\])|https?:\/\/(?:www\.)?toptierstate\.net(?:[/?#]|["']))/i.test(editorHtml), "Internal Top Tier link"],
+  ] as const;
+  const selectSchool = (name: string, value: string, change: (value: string) => void) => <label>{name}
+    <select value={value} onChange={event => change(event.target.value)}>
+      <option value="">No school</option>
+      {articleSchoolOptions.map(school => <option key={school.slug} value={school.name}>{school.name}</option>)}
+    </select>
+  </label>;
+  const previewImage = coverPreview || form.cover_image_url;
+  const takeaways = metadata.takeaways.map(text => text.trim()).filter(Boolean);
+  const locked = Boolean(initialId && initialId !== loadedArticleId) ||
+    (!editorRole && ["published", "scheduled"].includes(form.status));
   return (
     <div className="editor-layout">
-      <section className="editor-form">
+      <section className="editor-form" onChangeCapture={markChanged}>
         <div className="editor-top">
           <div>
             <small>ARTICLE EDITOR</small>
-            <h1>{id ? "Edit Article" : "Create New Article"}</h1>
+            <h1>{id.current ? "Edit Article" : "Create New Article"}</h1>
           </div>
           <a href="/dashboard">← Dashboard</a>
         </div>
 
-        <label>
-          Headline
-          <input
-            value={form.title}
-            onChange={(e) =>
-              setForm((f) => ({
-                ...f,
-                title: e.target.value,
-                slug: f.slug || slugify(e.target.value),
-              }))
-            }
-            placeholder="Enter article headline"
-          />
+        <label>Headline
+          <input value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))} placeholder="Enter article headline" />
+          <span className={titleInRange ? "cms-good" : "cms-warning"}>{form.title.length} characters · 50–65 suggested</span>
         </label>
-
-        <div className="two-col">
-          <label>
-            Category
-            <select
-              value={form.category}
-              onChange={(e) =>
-                setForm((f) => ({ ...f, category: e.target.value }))
-              }
-            >
-              <option>College Football</option>
-              <option>College Basketball</option>
-              <option>Breaking News</option>
-              <option>Recruiting</option>
-              <option>Transfer Portal</option>
-              <option>Coaching</option>
-              <option>Other News</option>
-            </select>
-          </label>
-
-          <label>
-            School
-            <select
-              value={form.school}
-              onChange={(e) =>
-                setForm((f) => ({ ...f, school: e.target.value }))
-              }
-            >
-              <option value="">No school</option>
-              {articleSchoolOptions.map((school) => (
-                <option key={school.slug} value={school.name}>{school.name}</option>
-              ))}
-            </select>
-          </label>
-
-          <label>
-            URL Slug
-            <input
-              value={form.slug}
-              onChange={(e) =>
-                setForm((f) => ({ ...f, slug: slugify(e.target.value) }))
-              }
-            />
-          </label>
+        <label className={`cms-cover-drop${dragging ? " is-dragging" : ""}`}
+          onDragOver={event => { event.preventDefault(); setDragging(true); }}
+          onDragLeave={() => setDragging(false)}
+          onDrop={event => { event.preventDefault(); setDragging(false); if (!locked) void cover(event.dataTransfer.files[0]); }}>
+          {previewImage && <Image unoptimized width={1600} height={900} src={previewImage} alt="Cover crop preview" />}
+          <strong>Cover Image</strong><span>Drop an image or choose a file · center crop to 1600 × 900</span>
+          <input type="file" disabled={busy || locked} accept="image/png,image/jpeg,image/webp" onChange={event => {
+            const input = event.currentTarget;
+            void cover(input.files?.[0]).finally(() => { input.value = ""; });
+          }} />
+        </label>
+        {metadata.cover_width > 0 && metadata.cover_width < 1200 && <p role="status" className="cms-warning">Low resolution · source is under 1200px wide.</p>}
+        {coverUpscaled && <p role="status" className="cms-warning">This cover was upscaled to 1600 × 900.</p>}
+        {form.cover_image_url && <button disabled={busy || locked} type="button" onClick={() => {
+          setForm(f => ({ ...f, cover_image_url: "" })); setMeta("cover_width", 0); setCoverUpscaled(false); markChanged();
+        }}>Remove cover image</button>}
+        <div className="two-col cms-cover-fields">
+          <label>Cover Image Alt Text<input value={metadata.cover_alt} onChange={e => setMeta("cover_alt", e.target.value)} /></label>
+          <label>Photo Credit<input value={metadata.cover_credit} onChange={e => setMeta("cover_credit", e.target.value)} /></label>
         </div>
-
-        <label>
-          Preview Description
-          <textarea
-            value={form.excerpt}
-            onChange={(e) =>
-              setForm((f) => ({ ...f, excerpt: e.target.value }))
-            }
-            maxLength={260}
-            placeholder="Short description shown on story cards and social previews."
-          />
-        </label>
-
-        <label>
-          Writer profile
-          <select value={writerId} onChange={e => { const id = e.target.value; setWriterId(id); const writer = writers.find(w => w.id === id); if (writer) setAuthorName(writer.name); }}>
-            <option value="">No profile (byline shown as plain text)</option>
-            {writers.map(w => <option key={w.id} value={w.id}>{w.name}</option>)}
-          </select>
-        </label>
-        <label>
-          Author Name
-          <input
-            required
-            value={authorName}
-            onChange={(e) => setAuthorName(e.target.value)}
-            placeholder="Name shown on the published article"
-          />
-        </label>
-
-        <label>
-          Cover Image
-          <input
-            disabled={busy}
-            type="file"
-            accept="image/png,image/jpeg,image/webp"
-            onChange={(e: ChangeEvent<HTMLInputElement>) => {
-              const input = e.currentTarget;
-              void cover(input.files?.[0]).finally(() => { input.value = ""; });
-            }}
-          />
-          <span className="field-help">
-            Cover images are center-cropped to 1600 × 900.
-          </span>
-          {coverUpscaled && <span role="status">This image was upscaled to 1600 × 900 and may look soft.</span>}
-        </label>
-
-        {form.cover_image_url && (
-          <button type="button" disabled={busy} onClick={() => {
-            setForm((f) => ({ ...f, cover_image_url: "" }));
-            setCoverUpscaled(false);
-          }}>
-            Remove cover image
-          </button>
-        )}
-
-        <label className="check">
-          <input
-            type="checkbox"
-            checked={form.is_top_story}
-            onChange={(e) =>
-              setForm((f) => ({ ...f, is_top_story: e.target.checked }))
-            }
-          />
-          Feature in Top Stories
-        </label>
-
-        <label className="check"><input type="checkbox" checked={form.is_sponsored} onChange={e => setForm(f => ({...f, is_sponsored:e.target.checked}))} /> Sponsored content</label>
+        <h2 className="cms-body-heading">Article Body</h2>
+        {!initialId && !editorHtml.replace(/<[^>]*>|&nbsp;/g, "").trim() && <div className="cms-template-chips" aria-label="Starter templates">
+          {Object.entries(templates).map(([name, headings]) => <button type="button" key={name} onClick={() => {
+            if (!editor.current) return;
+            editor.current.innerHTML = headings.map(heading => "<h2>" + escapeHtml(heading) + "</h2><p><br></p>").join("");
+            savedRange.current = null;
+            onEditorInput();
+          }}>{name}</button>)}
+        </div>}
 
         <div className="toolbar" aria-label="Article formatting toolbar">
           <button type="button" onClick={() => command("bold")}>
@@ -810,13 +828,15 @@ const deleteArticle = async () => {
           <button type="button" onClick={() => command("formatBlock", "h2")}>
             H2
           </button>
+          <button type="button" onClick={() => command("formatBlock", "h3")}>H3</button>
+          <button type="button" onClick={() => command("formatBlock", "blockquote")}>Pull Quote</button>
           <button type="button" onClick={() => command("insertUnorderedList")}>
             • List
           </button>
           <button type="button" onClick={() => command("insertOrderedList")}>
             1. List
           </button>
-          <button type="button" onClick={addLink}>
+          <button type="button" onMouseDown={e => e.preventDefault()} onClick={() => setPicker("link")}>
             🔗 Link
           </button>
           <button
@@ -832,6 +852,25 @@ const deleteArticle = async () => {
           >
             + Photo / MP4
           </button>
+          <select aria-label="Add promo card" value="" onChange={e => addPromo(e.target.value)}>
+            <option value="" disabled>+ Promo Card</option><option value="main">Follow @TopTierStateX</option>
+            <option value="school">Follow School X Account</option><option value="ig">Follow on Instagram</option>
+            <option value="related">Related Story Card</option><option value="custom">Custom Promo / Callout</option>
+          </select>
+          <button type="button" onClick={() => {
+            const url = window.prompt("Paste an X post URL")?.trim();
+            if (!url) return;
+            if (isXStatusUrl(url)) insertHtmlAtCursor(createEditorXPreview(url) + "<p><br></p>");
+            else setMessage("Enter a valid X or Twitter status URL.");
+          }}>+ Embed X Post</button>
+          <button type="button" onClick={() => {
+            const url = window.prompt("Paste a YouTube or Instagram post URL")?.trim();
+            if (!url) return;
+            const html = videoHtml(url);
+            if (html) insertHtmlAtCursor(html + "<p><br></p>");
+            else setMessage("Enter a valid YouTube video or Instagram post URL.");
+          }}>+ Embed Video / IG</button>
+          <small className="cms-word-count">{words} words · {Math.ceil(words / 225)} min read</small>
           <input
             ref={mediaInput}
             hidden
@@ -856,75 +895,121 @@ const deleteArticle = async () => {
         <div
           ref={editor}
           className="rich-editor"
-          contentEditable
+          contentEditable={!locked}
+          onClick={event => {
+            if (locked) return;
+            const target = event.target as HTMLElement;
+            const block = target.closest<HTMLElement>("[data-promo-block]");
+            if (!block) return;
+            if (target.closest("a")) event.preventDefault();
+            if (block.querySelector(".cms-promo-controls")) return;
+            editor.current?.querySelectorAll(".cms-promo-controls").forEach(node => node.remove());
+            const controls = document.createElement("span");
+            controls.className = "cms-promo-controls";
+            for (const label of ["Edit", "Remove ×"]) {
+              const button = document.createElement("button");
+              button.type = "button";
+              button.textContent = label;
+              button.onclick = () => {
+                if (label === "Edit") showPromo(JSON.parse(block.dataset.promoBlock!), block);
+                else { block.remove(); onEditorInput(); }
+              };
+              controls.append(button);
+            }
+            block.append(controls);
+          }}
+          onPointerOver={event => {
+            const target = event.target as HTMLElement;
+            const block = target.closest<HTMLElement>("[data-promo-block]");
+            if (block && !block.querySelector(".cms-promo-controls") && !locked) block.click();
+          }}
           suppressContentEditableWarning
           data-placeholder="Write your story here…"
           onInput={onEditorInput}
           onPaste={handleEditorPaste}
         />
 
+        <label>Preview Description
+          <textarea value={form.excerpt} maxLength={260} onChange={e => setForm(f => ({ ...f, excerpt: e.target.value }))} />
+          <span className={descriptionInRange ? "cms-good" : "cms-warning"}>{form.excerpt.length} characters · 120–155 suggested</span>
+        </label>
+        <div className="two-col">
+          <label>Category <select value={form.category} onChange={e => setForm(f => ({ ...f, category: e.target.value }))}>
+            {Array.from(new Set(["College Football", "College Basketball", "Breaking News", "Recruiting", "Transfer Portal", "Coaching", "Other News", form.category])).map(category => <option key={category}>{category}</option>)}
+          </select></label>
+          <label>Writer profile <select value={writerId} onChange={e => {
+            const writer = writers.find(item => item.id === e.target.value);
+            setWriterId(e.target.value);
+            if (writer) setAuthorName(writer.name);
+          }}><option value="">No profile (byline shown as plain text)</option>
+            {writers.map(writer => <option key={writer.id} value={writer.id}>{writer.name}</option>)}
+          </select></label>
+          {selectSchool("Primary School", form.school, school => setForm(f => ({ ...f, school })))}
+          {selectSchool("Secondary School", metadata.secondary_school, school => setMeta("secondary_school", school))}
+        </div>
+        <details className="cms-editor-drawer">
+          <summary>Key Takeaways / Quick Hits</summary>
+          {metadata.takeaways.map((text, index) => <label key={index}>Takeaway {index + 1}<input value={text} maxLength={240}
+            onChange={e => setMeta("takeaways", metadata.takeaways.map((item, i) => i === index ? e.target.value : item))} /></label>)}
+        </details>
+        <details className="cms-editor-drawer" open={!writerId && !authorName}>
+          <summary>Article Settings</summary>
+          <label>URL Slug <input value={form.slug} placeholder={slugify(form.title)} onChange={e => setForm(f => ({ ...f, slug: slugify(e.target.value) }))} /></label>
+          {!writerId && <label>Author Name <input value={authorName} onChange={e => setAuthorName(e.target.value)} /></label>}
+          <label className="check"><input type="checkbox" checked={form.is_top_story} onChange={e => setForm(f => ({ ...f, is_top_story: e.target.checked }))} />Feature in Top Stories</label>
+          <label className="check"><input type="checkbox" checked={form.is_sponsored} onChange={e => setForm(f => ({ ...f, is_sponsored: e.target.checked }))} />Sponsored content</label>
+          <label className="check"><input type="checkbox" checked={metadata.auto_follow} onChange={e => setMeta("auto_follow", e.target.checked)} />Auto-insert mid-article Follow @TopTierStateX card</label>
+          <label className="check"><input type="checkbox" checked={metadata.preferred_source} onChange={e => setMeta("preferred_source", e.target.checked)} />Show Google Preferred Source card</label>
+        </details>
+        {editorRole && <label>Schedule Publish (Central Time)
+          <input type="datetime-local" value={schedule} onChange={e => setSchedule(e.target.value)} />
+        </label>}
         {uploading && <p className="editor-uploading">{uploading}</p>}
-        {message && <p className="editor-message">{message}</p>}
-
+        {message && <p className="editor-message" role="status">{message}</p>}
         <div className="editor-actions">
-          {id && (
-  <button
-    type="button"
-    disabled={busy}
-    onClick={deleteArticle}
-    className="delete-button"
-  >
-    Delete Article
-  </button>
-)}
-          <button
-            disabled={busy}
-            onClick={() => save("draft")}
-            className="outline-button"
-          >
-            Save Draft
-          </button>
-          <button
-            disabled={busy}
-            onClick={() => save("pending_review")}
-            className="outline-button"
-          >
-            Submit for Review
-          </button>
-          <button
-            disabled={busy}
-            onClick={() => save("published")}
-            className="red-button"
-          >
-            Publish
-          </button>
+          <details className="cms-seo"><summary>SEO &amp; Discover · {checks.filter(([pass]) => pass).length}/5</summary>
+            <ul>{checks.map(([pass, label]) => <li key={label} className={pass ? "cms-good" : "cms-warning"}>{pass ? "✓" : "●"} {label}</li>)}</ul>
+          </details>
+          {savedAt && <span role="status">Saved · {savedAt}</span>}
+          {id.current && !locked && <button type="button" disabled={busy} onClick={deleteArticle} className="delete-button">Delete Article</button>}
+          <button disabled={busy || locked} onClick={() => save("draft")} className="outline-button">Save Draft</button>
+          <button disabled={busy || locked} onClick={() => save("ready_for_review")} className="outline-button">Submit for Review</button>
+          {editorRole && <>
+            <button disabled={busy || locked || !schedule} onClick={() => save("scheduled")} className="outline-button">Schedule Publish</button>
+            <button disabled={busy || locked} onClick={() => save("published")} className="red-button">Publish</button>
+          </>}
         </div>
+        {picker && <ArticlePicker context={picker} onChoose={chooseLink} onClose={() => setPicker(null)} />}
+        {promo && <PromoEditor school={form.school} promo={promo.value} onClose={() => setPromo(null)} onSave={value => {
+          const html = promoHtml(value);
+          if (!html) return;
+          if (promo.node?.isConnected) { promo.node.outerHTML = html; onEditorInput(); }
+          else insertHtmlAtCursor(html + "<p><br></p>");
+          setPromo(null);
+        }} />}
       </section>
-
-      <aside className="preview">
-        <small>LIVE ARTICLE PREVIEW</small>
-
-        <div className="preview-image">
-          <img
-            src={coverPreview || form.cover_image_url || "/top-tier-logo.png"}
-            alt="Article cover preview"
-          />
+      <aside className="preview cms-light-preview">
+        <div className="cms-preview-tabs" role="group" aria-label="Preview format">
+          {["Article", "Google", "X Card"].map(value => <button type="button" key={value} aria-pressed={tab === value}
+            onClick={() => setTab(value)}>{value}</button>)}
         </div>
-
-        <span>{form.category}</span>
-        <h2>{form.title || "Your headline appears here"}</h2>
-        <p>{form.excerpt || "Your article preview description appears here."}</p>
-
-        <div className="preview-body">
-          <div className="preview-body-label">BODY PREVIEW</div>
-          {editorHtml ? (
-            <RenderedArticleContent html={editorHtml} className="preview-prose" />
-          ) : (
-            <div className="preview-empty">
-              Start writing and your article body will appear here.
-            </div>
-          )}
-        </div>
+        {tab === "Google" ? <div className="cms-search-preview">
+          <small>toptierstate.net › articles › {form.slug || slugify(form.title) || "your-slug"}</small>
+          <h2>{form.title || "Your headline appears here"}</h2><p>{form.excerpt.slice(0, 155)}</p>
+        </div> : tab === "X Card" ? <div className="cms-x-preview">
+          <b>@TopTierStateX</b>
+          <div className="preview-image">{previewImage && <Image unoptimized width={1600} height={900} src={previewImage} alt={metadata.cover_alt} />}</div>
+          <strong>{form.title || "Your headline appears here"}</strong><small>toptierstate.net</small>
+        </div> : <>
+          <small className="cms-preview-category">{form.category}</small>
+          <h2>{form.title || "Your headline appears here"}</h2>
+          <p>{form.excerpt}</p>{authorName && <p>By {authorName}</p>}
+          {previewImage && <figure><div className="preview-image"><Image unoptimized width={1600} height={900} src={previewImage} alt={metadata.cover_alt} /></div>
+            {metadata.cover_credit && <figcaption>{metadata.cover_credit}</figcaption>}</figure>}
+          {takeaways.length > 0 && <section className="takeaways"><h3>Key Takeaways</h3><ul>{takeaways.map((text, index) => <li key={index}>{text}</li>)}</ul></section>}
+          <RenderedArticleContent html={withFollowPromo(editorHtml, metadata.auto_follow)} className="prose editorial-prose" />
+          {metadata.preferred_source && <PreferredSource />}
+        </>}
       </aside>
     </div>
   );

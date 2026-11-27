@@ -1,4 +1,5 @@
-﻿import { breadcrumbSchema, schemaJson } from "@/lib/structuredData";
+import { publicArticles } from "@/lib/articleWorkflow";
+import { breadcrumbSchema, schemaJson } from "@/lib/structuredData";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound, permanentRedirect } from "next/navigation";
@@ -22,7 +23,7 @@ export default async function AuthorPage({params,searchParams}: {params:Promise<
  const slug = (await params).slug; if (slug === "kary-haeth-ca0cf206" && await getWriter("kary-heath-ab2ac1d3") && !(await getWriter(slug))) permanentRedirect("/author/kary-heath-ab2ac1d3");
  const writer = await getWriter(slug); if (!writer) notFound();
  const rawPage = Number((await searchParams).page); const page = Number.isSafeInteger(rawPage) && rawPage > 0 ? Math.min(rawPage,100000) : 1; const size=20;
- const db = await createClient(); const {data,error} = await db.from("articles").select("*").eq("status","published").eq("writer_profile_id",writer.id).order("published_at",{ascending:false}).order("id",{ascending:false}).range((page-1)*size,page*size);
+ const db = await createClient(); const {data,error} = await db.from("articles").select("*").or(publicArticles()).eq("writer_profile_id",writer.id).order("published_at",{ascending:false}).order("id",{ascending:false}).range((page-1)*size,page*size);
  const articles = (data || []) as Article[]; const handle=writerXHandle(writer); const url=`${siteUrl}/author/${writer.slug}`;
  const schema={"@context":"https://schema.org","@type":"ProfilePage",mainEntity:{"@type":"Person",name:writer.name,image:new URL(writerImage(writer),siteUrl).toString(),jobTitle:writer.title || undefined,description:writerDescription(writer),sameAs:handle?[`https://x.com/${handle}`]:[],url}};
  return <><Header/><main id="main-content" className="shell writers-page"><div className="writer-header"><img src={writerImage(writer)} alt={writer.name}/><div><small>TOP TIER WRITER</small><h1>{writer.name}</h1>{writer.title && <p>{writer.title}</p>}<div className="writer-tags">{writer.coverage?.map(tag=><span key={tag}>{tag}</span>)}</div>{handle && <XAccountLink handle={handle} className="outline-button writer-x-link" />}</div></div>

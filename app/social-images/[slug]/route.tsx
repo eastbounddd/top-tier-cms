@@ -1,3 +1,4 @@
+import { publicArticles } from "@/lib/articleWorkflow";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { createClient } from "@/lib/supabase/server";
@@ -10,7 +11,7 @@ export const runtime = "nodejs";
 export async function GET(_request: Request, { params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
   const supabase = await createClient();
-  const { data } = await supabase.from("articles").select("cover_image_url,body").eq("slug", slug).eq("status", "published").single();
+  const { data } = await supabase.from("articles").select("cover_image_url,body").eq("slug", slug).or(publicArticles()).single();
   if (!data) return new Response("Social image not found", { status: 404, headers: { "Cache-Control": "no-store" } });
 
   try {

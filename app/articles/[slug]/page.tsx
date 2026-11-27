@@ -1,7 +1,9 @@
+import { withFollowPromo } from "@/lib/articleBlocks";
+import { publicArticles } from "@/lib/articleWorkflow";
 import { breadcrumbSchema, schemaJson } from "@/lib/structuredData";
 import Link from "next/link";
 import Image from "next/image";
-import { attachWriters } from "@/lib/writers";
+import { attachWriters, writerXHandle } from "@/lib/writers";
 import { WriterCard } from "@/components/WriterCard";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
@@ -10,7 +12,8 @@ import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { RenderedArticleContent } from "@/components/RenderedArticleContent";
 import { ArticleShare } from "@/components/ArticleShare";
-import { ArticleRecirculation, PreferredSource } from "@/components/ArticleRecirculation";
+import { ArticleRecirculation } from "@/components/ArticleRecirculation";
+import { PreferredSource } from "@/components/PreferredSource";
 import { EditorialNewsletter, JsonLd, LiveBoards, MoreStories, QuickJump, SchoolBeatCard } from "@/components/Editorial";
 import { articlePath, editorialClient, editorialDate, itemList, legacyArticleSlug, schoolByName, stories } from "@/lib/editorial";
 import { articlePresentation } from "@/lib/articlePresentation";
@@ -24,7 +27,7 @@ export const generateStaticParams = () => [];
 
 const getArticle = cache(async (slug: string) => {
   const supabase = editorialClient();
-  const lookup = (value: string) => supabase.from("articles").select("*").eq("slug", value).eq("status", "published").maybeSingle();
+  const lookup = (value: string) => supabase.from("articles").select("*").eq("slug", value).or(publicArticles()).maybeSingle();
   let { data, error } = await lookup(slug);
   if (!data && !error && slug === legacyArticleSlug) ({ data, error } = await lookup("n"));
   if (error) throw new Error(error.message);
@@ -51,6 +54,7 @@ export async function generateMetadata({
   const canonical = siteUrl + articlePath(data.slug);
   const image = getArticleImage(data);
   const socialImage = getSocialImageUrl(data.slug, image);
+  const imageAlt = typeof data.body?.cover_alt === "string" && data.body.cover_alt.trim() ? data.body.cover_alt : data.title;
   const description =
     data.excerpt?.replace(/[#\p{Extended_Pictographic}]/gu, "").replace(/\s+/g, " ").trim().slice(0,160) ||
     "Read the latest college football news, analysis and original reporting from Top Tier.";
@@ -77,7 +81,7 @@ export async function generateMetadata({
         {
           url: socialImage,
           secureUrl: socialImage,
-          alt: data.title,
+          alt: imageAlt,
           type: "image/png",
           width: coverWidth,
           height: coverHeight,
@@ -89,7 +93,7 @@ export async function generateMetadata({
       site: "@TopTierStateX",
       title: data.title,
       description,
-      images: [{ url: socialImage, secureUrl: socialImage, alt: data.title }],
+      images: [{ url: socialImage, secureUrl: socialImage, alt: imageAlt }],
     },
   };
 }
@@ -105,6 +109,12 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
   const school = schoolByName(data.school);
   const schoolSlug = school?.slug || data.school?.trim().toLowerCase().replace(/\s+/g, "-");
   const beat = school;
+  const taggedSchools = [...new Set([data.school, data.body?.secondary_school].filter((name): name is string =>
+    typeof name === "string" && Boolean(name.trim())))];
+  const customTakeaways = Array.isArray(data.body?.takeaways) ? data.body.takeaways.filter(
+    (value: unknown): value is string => typeof value === "string" && Boolean(value.trim())).slice(0, 3) : [];
+  const handle = writer ? writerXHandle(writer) : null;
+  const coverAlt = typeof data.body?.cover_alt === "string" && data.body.cover_alt.trim() ? data.body.cover_alt : data.title;
   const football = { name: "College Football", path: "/college-football" };
   const topic = school ? { name: school.name, path: `/schools/${school.slug}` } :
     data.school === "Recruiting" || data.category === "Recruiting" ? { name: "Recruiting", path: "/recruiting" } :
@@ -133,11 +143,12 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
   const organization = { "@id": `${siteUrl}/#organization` };
   const news = {
     "@context": "https://schema.org", "@type": "NewsArticle",
-    headline: data.title, description: data.excerpt || undefined,
+    headline: data.title, description: data.excerpt || takeaways[0] || data.title,
     image: [{ "@type": "ImageObject", url: socialImage, width: coverWidth, height: coverHeight }],
     datePublished: published, dateModified: modified,
     author: [{ "@type": /^@?tops*tier/i.test(author) ? "Organization" : "Person", name: author, ...(writer ? { url: `${siteUrl}/author/${writer.slug}` } : {}) }],
-    publisher: organization, mainEntityOfPage: canonical,
+    publisher: { "@type": "Organization", ...organization, name: "Top Tier Media" }, mainEntityOfPage: canonical,
+    ...(taggedSchools.length ? { about: taggedSchools.map(name => ({ "@type": "Thing", name })), keywords: taggedSchools.join(", ") } : {}),
   };
   const rankLinks = ranks.map(({ anchor, number, name }) => <li key={anchor}><a href={`#${anchor}`}>#{number} <span>{name}</span></a></li>);
 
@@ -165,20 +176,23 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
             <div className="article-cover-frame">
               <Image width={coverWidth} height={coverHeight} sizes="(max-width: 820px) 100vw, 700px"
                 unoptimized={!/^https:\/\/(?:[^/]+\.)?supabase\.co\//i.test(data.cover_image_url) && !data.cover_image_url.startsWith("/")}
-                className="cover" src={data.cover_image_url} alt={data.title} priority fetchPriority="high" />
+                className="cover" src={data.cover_image_url} alt={coverAlt} priority fetchPriority="high" />
             </div>
             {(caption || credit) && <figcaption>{[caption, credit].filter(Boolean).join(" · ")}</figcaption>}
           </figure>}
+          {customTakeaways.length > 0 && <section className="takeaways"><h2>Key Takeaways</h2><ul>
+            {customTakeaways.map((text: string, index: number) => <li key={index}>{text}</li>)}
+          </ul></section>}
           {ranks.length > 0 ? <>
             {(criteria.length > 0 || methodology) && <section className="takeaways"><h2>Ranking Criteria</h2>
               {criteria.length > 0 ? <ul>{criteria.map(text => <li key={text}>{text}</li>)}</ul> : <p>{methodology}</p>}
             </section>}
             <nav className="rank-jumps" aria-label="Jump to rank"><ul>{rankLinks}</ul></nav>
-          </> : takeaways.length > 0 && <section className="takeaways">
+          </> : !Array.isArray(data.body?.takeaways) && takeaways.length > 0 && <section className="takeaways">
             <h2>{takeaways.length > 1 ? "Key Takeaways" : "Quick Answer"}</h2>
             <ul>{takeaways.map(text => <li key={text}>{text}</li>)}</ul>
           </section>}
-          <RenderedArticleContent html={body} className="prose editorial-prose" />
+          <RenderedArticleContent html={withFollowPromo(body, data.body?.auto_follow === true)} className="prose editorial-prose" />
           {writer && <WriterCard writer={writer} />}
         </article>
         <aside className="editorial-rail">
@@ -188,7 +202,7 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
         </aside>
       </div>
       <EditorialNewsletter article />
-      <PreferredSource />
+      {data.body?.preferred_source !== false && <PreferredSource />}
       <ArticleRecirculation articles={related.slice(0, 5)} />
     </main>
     <Footer newsletter={false} />

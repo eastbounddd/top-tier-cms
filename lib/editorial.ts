@@ -1,3 +1,4 @@
+import { publicArticles } from "@/lib/articleWorkflow";
 import { createClient } from "@supabase/supabase-js";
 import type { Article } from "@/components/ArticleCard";
 import { schools } from "@/lib/schools";
@@ -31,11 +32,11 @@ export async function stories({ school, football, basketball, recruiting, catego
   school?: string; football?: boolean; basketball?: boolean; recruiting?: boolean; category?: string; titleContains?: string; writerId?: string; limit?: number | null;
 } = {}): Promise<Article[]> {
   const db = editorialClient();
-  let query = db.from("articles").select("id,slug,title,excerpt,cover_image_url,category,school,published_at,is_top_story,writer_profile_id,byline:body->>author_name,author_name").eq("status", "published");
+  let query = db.from("articles").select("id,slug,title,excerpt,cover_image_url,category,school,published_at,is_top_story,writer_profile_id,byline:body->>author_name,author_name").or(publicArticles());
   if (school === "LSU") {
     // Legacy LSU coverage predates school tags. Include LSU headlines only when no school is set.
-    query = query.or('school.ilike.lsu,and(or(school.is.null,school.eq.""),title.ilike.%LSU%)');
-  } else if (school) query = query.eq("school", school);
+    query = query.or('school.ilike.lsu,body->>secondary_school.eq.LSU,and(or(school.is.null,school.eq.""),title.ilike.%LSU%)');
+  } else if (school) query = query.or(`school.eq.${JSON.stringify(school)},body->>secondary_school.eq.${JSON.stringify(school)}`);
   if (football) query = query.in("category", footballCategories);
   if (basketball) query = query.or(`category.ilike.%basketball%,title.ilike.%basketball%,title.ilike.%CBB%,excerpt.ilike.%basketball%,excerpt.ilike.%CBB%,slug.in.(n,${legacyArticleSlug})`);
   if (category) query = query.eq("category", category);
@@ -70,7 +71,7 @@ export async function basketballStories(limit: number | null = null) {
 
 export async function latestTvGuidePath() {
   const { data } = await editorialClient().from("articles").select("slug")
-    .eq("status", "published")
+    .or(publicArticles())
     .or("title.ilike.%tv guide%,title.ilike.%tv schedule%,title.ilike.%television schedule%")
     .order("published_at", { ascending: false }).limit(1).maybeSingle();
   return data?.slug ? articlePath(data.slug) : null;
@@ -78,7 +79,7 @@ export async function latestTvGuidePath() {
 
 export async function breakingStories() {
   const { data } = await editorialClient().from("articles").select("slug,title")
-    .eq("status", "published").not("slug", "is", null)
+    .or(publicArticles()).not("slug", "is", null)
     .order("published_at", { ascending: false, nullsFirst: false })
     .order("id", { ascending: false }).limit(8);
   return (data ?? []).filter(story => story.slug && story.title?.trim()).slice(0, 7);
