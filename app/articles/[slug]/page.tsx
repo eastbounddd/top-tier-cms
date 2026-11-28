@@ -137,15 +137,39 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
   const credit = typeof data.body?.cover_credit === "string" ? data.body.cover_credit : "";
 
   const heisman = /\bheisman\b/i.test(data.title);
+  const schools = [...new Set(taggedSchools.map(name => schoolByName(name)?.name).filter((name): name is string => Boolean(name)))];
+  const basketball = /basketball/i.test(data.category || "") || path === articlePath(legacyArticleSlug) ||
+    (data.category === "Other News" && /basketball|\bCBB\b/i.test(data.title + " " + (data.excerpt || "")));
+  const fallbackCategory = basketball ? "College Basketball" : "College Football";
   const [schoolStories, topicStories, generalStories] = await Promise.all([
-    beat ? stories({ school: beat.name, limit: 8 }) : Promise.resolve([]),
+    schools.length ? stories({ taggedSchools: schools, limit: 9 }) : Promise.resolve([]),
     heisman ? stories({ titleContains: "Heisman", limit: 8 }) : stories({ category: data.category, limit: 8 }),
     stories({ limit: 14 }),
   ]);
-  const related = [...new Map([...schoolStories, ...topicStories, ...generalStories]
-    .filter(story => articlePath(story.slug) !== path && story.id !== data.id)
-    .map(story => [articlePath(story.slug), story])).values()];
-  const relatedTitle = heisman ? "More Heisman & CFB" : `More ${beat?.name || data.category || "Stories"}`;
+  const otherStories = (items: typeof schoolStories) => {
+    const seen = new Set([path]);
+    return items.filter(story => {
+      const storyPath = articlePath(story.slug);
+      if (story.id === data.id || seen.has(storyPath)) return false;
+      seen.add(storyPath);
+      return true;
+    });
+  };
+  const schoolLabels = new Map<string, string>();
+  const schoolSidebar = otherStories(schoolStories).filter(story => {
+    const secondary = typeof story.body === "object" ? story.body?.secondary_school : undefined;
+    const match = [story.school, secondary].map(tag => schoolByName(tag)?.name)
+      .find(name => name && schools.includes(name));
+    if (match) schoolLabels.set(story.id, match);
+    return Boolean(match);
+  }).slice(0, 6);
+  const sidebar = schoolSidebar.length ? schoolSidebar :
+    otherStories(await stories({ category: fallbackCategory, limit: 9 })).slice(0, 6);
+  const sidebarSchools = schools.filter(name => schoolSidebar.some(story => schoolLabels.get(story.id) === name));
+  const sidebarTitle = `More ${sidebarSchools.join(" & ") || fallbackCategory}`;
+  const sidebarPaths = new Set(sidebar.map(story => articlePath(story.slug)));
+  const related = otherStories([...schoolStories, ...topicStories, ...generalStories])
+    .filter(story => !sidebarPaths.has(articlePath(story.slug)));
   const organization = { "@id": `${siteUrl}/#organization` };
   const news = {
     "@context": "https://schema.org", "@type": "NewsArticle",
@@ -204,7 +228,7 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
         <aside className="editorial-rail">
           {ranks.length > 0 ? <QuickJump ranks={ranks} /> : beat && <SchoolBeatCard school={beat} hub={Boolean(school)} />}
           <LiveBoards />
-          <MoreStories title={relatedTitle} articles={related.slice(5, 8)} />
+          <MoreStories title={sidebarTitle} articles={sidebar} schoolLabels={schoolLabels} />
         </aside>
       </div>
       <EditorialNewsletter article />

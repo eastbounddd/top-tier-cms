@@ -48,13 +48,20 @@ export const liveTrackers = cache(async () => {
   });
 });
 
-export async function stories({ school, football, basketball, recruiting, category, titleContains, writerId, publishedSince, publishedBefore, offset: startOffset = 0, limit = 24 }: {
-  school?: string; football?: boolean; basketball?: boolean; recruiting?: boolean; category?: string; titleContains?: string; writerId?: string; publishedSince?: string; publishedBefore?: string; offset?: number; limit?: number | null;
+export async function stories({ school, taggedSchools, football, basketball, recruiting, category, titleContains, writerId, publishedSince, publishedBefore, offset: startOffset = 0, limit = 24 }: {
+  school?: string; taggedSchools?: string[]; football?: boolean; basketball?: boolean; recruiting?: boolean; category?: string; titleContains?: string; writerId?: string; publishedSince?: string; publishedBefore?: string; offset?: number; limit?: number | null;
 } = {}): Promise<Article[]> {
   const db = editorialClient();
   const buildQuery = (withLabels: boolean) => {
-    let query = db.from("articles").select("id,slug,title,excerpt,cover_image_url,category,school,published_at,is_top_story,writer_profile_id,byline:body->>author_name,cover_alt:body->>cover_alt,cover_caption:body->>cover_caption,author_name,is_sponsored" + (withLabels ? ",labels" : "")).or(publicArticles());
-  if (school === "LSU") {
+    let query = db.from("articles").select("id,slug,title,excerpt,cover_image_url,category,school,published_at,is_top_story,writer_profile_id,byline:body->>author_name,cover_alt:body->>cover_alt,cover_caption:body->>cover_caption,secondary_school:body->>secondary_school,author_name,is_sponsored" + (withLabels ? ",labels" : "")).or(publicArticles());
+  if (taggedSchools?.length) {
+    const tags = [...new Set(taggedSchools.flatMap(name => {
+      const team = schoolByName(name);
+      return team ? [team.name, team.slug, ...Object.keys(schoolAliases).filter(alias => schoolAliases[alias] === team.slug)] : [name];
+    }))];
+    query = query.or(tags.flatMap(tag => ["school", "body->>secondary_school"]
+      .map(column => column + ".ilike." + JSON.stringify(tag))).join(","));
+  } else if (school === "LSU") {
     // Legacy LSU coverage predates school tags. Include LSU headlines only when no school is set.
     query = query.or('school.ilike.lsu,body->>secondary_school.eq.LSU,and(or(school.is.null,school.eq.""),title.ilike.%LSU%)');
   } else if (school) query = query.or(`school.eq.${JSON.stringify(school)},body->>secondary_school.eq.${JSON.stringify(school)}`);
@@ -69,7 +76,7 @@ export async function stories({ school, football, basketball, recruiting, catego
   return query.order("published_at", { ascending: false, nullsFirst: false }).order("id", { ascending: false });
   };
   let ordered = buildQuery(true);
-  const rows: (Article & { byline?: string; author_name?: string; cover_alt?: string; cover_caption?: string })[] = [];
+  const rows: (Article & { byline?: string; author_name?: string; cover_alt?: string; cover_caption?: string; secondary_school?: string })[] = [];
   const batch = limit ?? 500;
   for (let offset = startOffset; ; offset += batch) {
     let { data, error } = await ordered.range(offset, offset + batch - 1);
@@ -84,7 +91,7 @@ export async function stories({ school, football, basketball, recruiting, catego
   return attachWriters(db, rows.map(row => ({
     ...row,
     school: school === "LSU" ? school : row.school,
-    body: { author_name: row.byline || row.author_name || undefined, cover_alt: row.cover_alt, cover_caption: row.cover_caption },
+    body: { author_name: row.byline || row.author_name || undefined, cover_alt: row.cover_alt, cover_caption: row.cover_caption, secondary_school: row.secondary_school },
   })));
 }
 

@@ -28,8 +28,8 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
 export default async function SchoolPage({ params }: { params: Promise<{ slug: string }> }) {
   const school = getSchoolBySlug((await params).slug);
   if (!school) notFound();
-  const articles = await stories({ school: school.name, limit: 40 });
-  const [lead, ...latest] = articles.length ? articles : await stories({ football: true, limit: 10 });
+  const articles = await stories({ taggedSchools: [school.name], limit: 40 });
+  const [lead, ...latest] = articles.length ? articles : await stories({ category: "College Football", limit: 6 });
   const displayHandle = school.xDisplayHandle || school.xHandle;
   const path = `/schools/${school.slug}`;
   return <>
@@ -45,7 +45,7 @@ export default async function SchoolPage({ params }: { params: Promise<{ slug: s
       </div>
       <nav className="editorial-breadcrumb school-breadcrumb" aria-label="Breadcrumb"><Link href="/">Home</Link><span aria-hidden="true">›</span><Link href="/schools">Schools</Link><span aria-hidden="true">›</span><span aria-current="page">{school.name}</span></nav>
       <div className="school-hub-grid">
-        <div>{!articles.length && <h2 className="national-feed-label">Latest National Coverage</h2>}
+        <div>{!articles.length && <h2 className="national-feed-label">More College Football</h2>}
           {lead ? <Story article={lead} lead schoolLead={Boolean(articles.length)} /> : <p>No articles have been published yet.</p>}
           {latest.length > 0 && <SchoolStoryList articles={latest} />}
         </div>

@@ -41,7 +41,7 @@ export function EditorialThumbnail({ article, className, sizes }: { article: Art
   return <span className={`editorial-thumb ${className}`}><StoryImage src={article.cover_image_url} alt={articleCoverAlt(article)} fill sizes={sizes} quality={85} /></span>;
 }
 
-export function MoreStories({ title, articles, expanded = false }: { title: string; articles: Article[]; expanded?: boolean }) {
+export function MoreStories({ title, articles, expanded = false, schoolLabels }: { title: string; articles: Article[]; expanded?: boolean; schoolLabels?: ReadonlyMap<string, string> }) {
   if (!articles.length) return null;
   return <section className={`rail-card more-stories${expanded ? " more-stories-expanded" : ""}`}>
     <div className="rail-heading"><h2>{title}</h2>{expanded && <Link href="/college-football">View all →</Link>}</div>
@@ -49,7 +49,7 @@ export function MoreStories({ title, articles, expanded = false }: { title: stri
       return <li key={article.id}><Link href={articlePath(article.slug)}>
         {expanded && <EditorialThumbnail article={article} className="rail-story-thumb" sizes="240px" />}
         <div><StoryLabels article={article} now={Date.now()} />
-          <strong>{article.title}</strong>{!expanded && <span>{article.school || article.category}</span>}</div>
+          <strong>{article.title}</strong>{!expanded && <span>{schoolLabels?.get(article.id) || article.school || (typeof article.body === "object" && article.body?.secondary_school) || article.category}</span>}</div>
       </Link></li>;
     })}</ul>
   </section>;
