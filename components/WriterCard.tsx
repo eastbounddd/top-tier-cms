@@ -4,7 +4,7 @@ import { XAccountLink } from "@/components/XAccountLink";
 import { WriterAvatar } from "@/components/WriterAvatar";
 import { writerSchool } from "@/lib/writerDirectory";
 import { schoolTheme } from "@/lib/schoolColors";
-import { publicWriterBio, writerXHandle, type Writer } from "@/lib/writers";
+import { publicWriterBio, writerXDisplayHandle, writerXHandle, type Writer } from "@/lib/writers";
 
 export function WriterCard({ writer }: { writer: Writer }) {
   const handle = writerXHandle(writer);
@@ -18,7 +18,7 @@ export function WriterCard({ writer }: { writer: Writer }) {
       {bio && <p>{bio}</p>}
     </div>
     <div className="compact-author-actions">
-      {handle && <XAccountLink handle={handle} className="directory-follow" />}
+      {handle && <XAccountLink handle={handle} label={`@${writerXDisplayHandle(handle)}`} className="directory-follow" />}
       <Link href={profile}>More articles →</Link>
     </div>
   </aside>;

@@ -52,7 +52,8 @@ export function PromoEditor({ promo, school, onSave, onClose }: {
       const cleaned = handle.trim().replace(/^@/, "");
       if (value.kind === "school-x") {
         if (!/^[\w]{1,15}$/.test(cleaned)) return;
-        onSave({ ...value, title: "Follow @" + cleaned, url: "https://x.com/" + cleaned });
+        const account = schools.find(item => item.xHandle?.toLowerCase() === cleaned.toLowerCase());
+        onSave({ ...value, title: "Follow @" + (account?.xDisplayHandle || account?.xHandle || cleaned), url: "https://x.com/" + (account?.xHandle || cleaned) });
       } else if (safeArticleUrl(value.url)) onSave(value);
     }}>
       {value.kind === "school-x" ? <label>{school || "School"} X handle

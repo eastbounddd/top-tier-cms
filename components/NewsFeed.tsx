@@ -1,5 +1,6 @@
 "use client";
 
+import { StoryLabels } from "@/components/StoryLabels";
 import { articleCoverAlt } from "@/lib/articleCoverAlt";
 import { writerPath } from "@/lib/writerPaths";
 import Link from "next/link";
@@ -25,6 +26,7 @@ export function NewsCard({ article, featured = false, secondary = false, basketb
       <div className="newsroom-meta"><b>{featured && "Featured · "}{article.category}</b>
         {date && <time dateTime={article.published_at ?? undefined}>{date}</time>}
       </div>
+      <StoryLabels article={article} now={Date.now()} />
       <Heading><Link href={path}>{article.title}</Link></Heading>
       {article.excerpt && <p>{article.excerpt}</p>}
       <div className="newsroom-card-footer">

@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { authoredTakeaways, takeawayMax, takeawayMin } from "@/lib/articlePresentation";
+import { isStoryLabel, type StoryLabel } from "@/lib/storyLabels";
 import { canPublish, chicagoDate } from "@/lib/articleWorkflow";
 import { createClient } from "@/lib/supabase/server";
 
@@ -14,7 +15,7 @@ type ArticleFields = {
   school: string;
   cover_image_url: string;
   is_top_story: boolean;
-  is_sponsored: boolean;
+  labels: StoryLabel[];
   status: string;
   writer_profile_id: string | null;
   body: { html: string; author_name: string; keyTakeaways?: string[]; [key: string]: unknown };
@@ -66,7 +67,12 @@ export async function saveArticle(id: string | null, fields: ArticleFields, upda
       : new Date().toISOString()
     : null);
 
+  if (!Array.isArray(fields.labels) || fields.labels.length > 2 || new Set(fields.labels).size !== fields.labels.length ||
+      !fields.labels.every(isStoryLabel)) return { error: "Choose up to two valid story labels." };
+
   const payload = {
+    labels: fields.labels,
+    is_sponsored: fields.labels.includes("PARTNER"),
     title: fields.title,
     slug: fields.slug,
     excerpt: fields.excerpt,
@@ -81,18 +87,12 @@ export async function saveArticle(id: string | null, fields: ArticleFields, upda
   };
 
   const columns = [...Object.keys(payload), ...(!id ? ["author_id"] : [])].join(",");
-  const { error: schemaError } = await articles.select(`${columns},is_sponsored`).limit(0);
-  if (schemaError) {
-    const missingSponsorship = schemaError.code === "42703" && schemaError.message.includes("is_sponsored");
-    if (!missingSponsorship || fields.is_sponsored) return { error: schemaError.message };
-    const { error: legacyError } = await articles.select(columns).limit(0);
-    if (legacyError) return { error: legacyError.message };
-  }
-  const article = schemaError ? payload : { ...payload, is_sponsored: fields.is_sponsored ?? false };
+  const { error: schemaError } = await articles.select(columns).limit(0);
+  if (schemaError) return { error: schemaError.message };
 
   const { data, error } = id
-    ? await (updatedAt ? articles.update(article).eq("id", id).eq("updated_at", updatedAt) : articles.update(article).eq("id", id).is("updated_at", null)).select("id,updated_at").maybeSingle()
-    : await articles.insert({ ...article, author_id: user.id }).select("id,updated_at").single();
+    ? await (updatedAt ? articles.update(payload).eq("id", id).eq("updated_at", updatedAt) : articles.update(payload).eq("id", id).is("updated_at", null)).select("id,updated_at").maybeSingle()
+    : await articles.insert({ ...payload, author_id: user.id }).select("id,updated_at").single();
   if (error || !data) return { error: error?.message || "The article changed or you no longer have permission to save it." };
   if (previous?.status === "published" || previous?.status === "scheduled" || ["published", "scheduled"].includes(fields.status)) {
     revalidatePath("/", "layout");

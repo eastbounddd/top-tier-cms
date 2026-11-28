@@ -15,11 +15,12 @@ export const metadata = pageMetadata("College Football Schools", `${schools.leng
 export default function SchoolsPage() {
   const entries = schoolsAlphabetical.map(school => {
     const handle = school.xHandle;
-    return { id: school.slug, searchable: `${school.name} ${school.slug} ${school.brand?.shortName ?? ""} ${school.brand?.mascot ?? ""} ${handle ? "@" + handle : ""}`, filters: [school.conference, ...(["AAC", "Mountain West", "Sun Belt"].includes(school.conference) ? ["Group of 5"] : [])],
+    const displayHandle = school.xDisplayHandle || handle;
+    return { id: school.slug, searchable: `${school.name} ${school.slug} ${school.brand?.shortName ?? ""} ${school.brand?.mascot ?? ""} ${handle ? "@" + handle + " @" + displayHandle : ""}`, filters: [school.conference, ...(["AAC", "Mountain West", "Sun Belt"].includes(school.conference) ? ["Group of 5"] : [])],
       card: <article className="directory-card school-directory-card" style={schoolTheme(school.slug)}>
         <div className="directory-card-top"><div className="directory-school-logo"><SchoolBadge school={school} size={44} alt={`${school.name} logo`} /></div><span>{school.conference}</span></div>
         <h2><Link href={`/schools/${school.slug}`}>{school.name}</Link></h2>
-        {handle && <p>@{handle}</p>}
+        {handle && <p>@{displayHandle}</p>}
         <div className="directory-card-actions"><Link href={`/schools/${school.slug}`}>View Hub →</Link>{handle && <XAccountLink handle={handle} className="directory-follow" label="Follow" />}</div>
       </article>,
     };

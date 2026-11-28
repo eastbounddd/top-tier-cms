@@ -1,3 +1,4 @@
+import { StoryLabels } from "@/components/StoryLabels";
 import { articleSponsorship, tagSponsoredLinks } from "@/lib/articleSponsorship";
 import { articleCoverAlt } from "@/lib/articleCoverAlt";
 import { writerPath } from "@/lib/writerPaths";
@@ -166,6 +167,7 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
         <article className="reading-column">
           <Link className="editorial-pill" href={topic.path}>{topic.name}</Link>
 
+          <StoryLabels article={data} now={Date.now()} sponsored={sponsored} />
           <h1>{data.title}</h1>
           {sponsored && <p className="sponsored-disclosure"><strong>Partner content.</strong>{" "}
             {partnerName ? `This article is sponsored by ${partnerName}.` : "This article is sponsored."} Top Tier may earn a commission.
@@ -196,7 +198,7 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
             </section>}
             <nav className="rank-jumps" aria-label="Jump to rank"><ul>{rankLinks}</ul></nav>
           </> : null}
-          <RenderedArticleContent html={sponsored ? tagSponsoredLinks(articleHtml, partnerName) : articleHtml} className="prose editorial-prose" />
+          <RenderedArticleContent html={sponsored ? tagSponsoredLinks(articleHtml, partnerName, true) : articleHtml} className="prose editorial-prose" sponsored={sponsored} />
           {writer && <WriterCard writer={writer} />}
         </article>
         <aside className="editorial-rail">

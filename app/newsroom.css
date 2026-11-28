@@ -84,10 +84,25 @@
 .more-stories-expanded li strong{font-size:14px;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
 .editorial-thumb{display:block;position:relative;flex:none;overflow:hidden;border-radius:8px;background:#19191c}
 .rail-story-thumb{width:60px;height:60px}
-.story-status{display:inline-block;font-size:9px;margin-bottom:3px;padding:2px 5px;border-radius:3px;text-transform:uppercase}
-.status-breaking{background:#c81e25;color:white}
-.status-new{background:#eff6ff;color:#1d4ed8}
-.status-hot,.status-trending{background:#fef3c7;color:#92400e}
+.story-labels{display:inline-flex;flex-wrap:wrap;gap:4px;margin:0 0 4px;vertical-align:middle}
+.story-label{display:inline-flex;align-items:center;padding:2px 6px;border-radius:4px;font-size:10px;font-weight:800;line-height:1.35;letter-spacing:.02em;color:#fff}
+.story-label-breaking{background:#c81e25}
+.story-label-hot{background:#fef3c7;color:#92400e}
+.story-label-exclusive{background:#5b21b6}
+.story-label-insider{background:#155e75}
+.story-label-preview{background:#1e40af}
+.story-label-recap{background:#166534}
+.story-label-analysis{background:#3730a3}
+.story-label-opinion{background:#9d174d}
+.story-label-partner{background:#854d0e}
+.more-stories li .story-labels{display:inline-flex;margin:0 0 4px}
+.more-stories li .story-label{display:inline-flex;margin:0;color:#fff;font-size:10px}
+.more-stories li .story-label-hot{color:#92400e}
+.cms-story-labels{margin:12px 0;border:1px solid #454b56;border-radius:8px;padding:10px}
+.cms-story-labels legend{font-size:13px;font-weight:700}
+.cms-story-labels p,.cms-label-help{color:#a1a1aa;font-size:12px}
+.cms-label-help{display:block;margin-top:3px}
+
 .preferred-source{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:14px;padding:18px 22px;background:white;border:1px solid var(--tt-border);border-radius:12px}
 .preferred-source h2{font:700 17px var(--font-sans),sans-serif;text-transform:none;margin:0 0 4px}
 .preferred-source p{margin:0;color:#52525b;font-size:13.5px;line-height:1.45}

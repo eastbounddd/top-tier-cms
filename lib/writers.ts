@@ -1,4 +1,5 @@
-﻿import type { SupabaseClient } from "@supabase/supabase-js";
+﻿import { schools } from "@/lib/schools";
+import type { SupabaseClient } from "@supabase/supabase-js";
 
 export type Writer = { id: string; slug: string; name: string; profile_image: string | null; coverage: string[]; x_handle: string | null; bio: string; title: string | null; joined_date: string | null };
 export function publicWriterBio(value?: string | null) {
@@ -9,8 +10,13 @@ export function publicWriterBio(value?: string | null) {
 export const writerImage = (writer: Writer) => writer.profile_image || "/top-tier-logo.png";
 export function writerXHandle(writer: Writer) {
   const handle = writer.x_handle?.trim().replace(/^@/, "");
-  return handle && /^[A-Za-z0-9_]{1,15}$/.test(handle) ? handle : null;
+  if (!handle || !/^[A-Za-z0-9_]{1,15}$/.test(handle)) return null;
+  return schools.find(school => school.xHandle?.toLowerCase() === handle.toLowerCase())?.xHandle || handle;
 }
+export function writerXDisplayHandle(handle: string) {
+  return schools.find(school => school.xHandle === handle)?.xDisplayHandle || handle;
+}
+
 export async function attachWriters<T extends { writer_profile_id?: string | null }>(client: SupabaseClient, articles: T[]): Promise<(T & { writer?: Writer })[]> {
   const ids = [...new Set(articles.map(a => a.writer_profile_id).filter((id): id is string => Boolean(id)))];
   if (!ids.length) return articles;

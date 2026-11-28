@@ -10,7 +10,7 @@ import { stories } from "@/lib/editorial";
 import { schoolTheme } from "@/lib/schoolColors";
 import { breadcrumbSchema } from "@/lib/structuredData";
 import { getWriter, writerSchool } from "@/lib/writerDirectory";
-import { publicWriterBio, writerImage, writerXHandle } from "@/lib/writers";
+import { publicWriterBio, writerImage, writerXDisplayHandle, writerXHandle } from "@/lib/writers";
 import { writerPath } from "@/lib/writerPaths";
 import { canonicalSite, pageMetadata } from "@/lib/pageMetadata";
 
@@ -46,7 +46,7 @@ export default async function WriterProfile({ params }: Props) {
         {writer.title && <strong>{writer.title}</strong>}
         {bio && bio.split(/\n\s*\n/).filter(Boolean).map((paragraph,index) => <p key={index}>{paragraph}</p>)}
         <div className="profile-actions"><strong>{articles.length} {articles.length === 1 ? "story" : "stories"}</strong>
-          {xHandle && <XAccountLink handle={xHandle} className="directory-follow" label={`Follow @${xHandle} on X`} />}
+          {xHandle && <XAccountLink handle={xHandle} className="directory-follow" label={`Follow @${writerXDisplayHandle(xHandle)} on X`} />}
           {school && <Link className="profile-school-link" href={`/schools/${school.slug}`}>View {school.name} Hub →</Link>}
         </div>
       </div>

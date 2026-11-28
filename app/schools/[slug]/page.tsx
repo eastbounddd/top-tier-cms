@@ -5,7 +5,7 @@ import { Footer } from "@/components/Footer";
 import { JsonLd, LiveBoards, SchoolBadge, SchoolBeatCard, SchoolStoryList, Story } from "@/components/Editorial";
 import { XAccountLink } from "@/components/XAccountLink";
 import { stories, storyList } from "@/lib/editorial";
-import { pageMetadata } from "@/lib/pageMetadata";
+import { canonicalSite, pageMetadata } from "@/lib/pageMetadata";
 import { schoolColors, schoolTheme } from "@/lib/schoolColors";
 import { getSchoolBySlug, schools } from "@/lib/schools";
 import { breadcrumbSchema } from "@/lib/structuredData";
@@ -30,6 +30,7 @@ export default async function SchoolPage({ params }: { params: Promise<{ slug: s
   if (!school) notFound();
   const articles = await stories({ school: school.name, limit: 40 });
   const [lead, ...latest] = articles.length ? articles : await stories({ football: true, limit: 10 });
+  const displayHandle = school.xDisplayHandle || school.xHandle;
   const path = `/schools/${school.slug}`;
   return <>
     <Header />
@@ -37,8 +38,8 @@ export default async function SchoolPage({ params }: { params: Promise<{ slug: s
       <div className="school-banner">
         <div className="school-banner-identity"><SchoolBadge school={school} size={44} banner /><div><h1>{school.name}</h1><p>School Hub · Football · Recruiting · Basketball</p><span className="free-note">✓ 100% Free · No Paywalls</span></div></div>
         {school.xHandle && <div className="school-banner-social">
-          <XAccountLink handle={school.xHandle} className="school-follow-pill" label={`Follow @${school.xHandle}`}
-            compactLabel={school.xHandle.length > 12 ? `@${school.xHandle}` : undefined} />
+          <XAccountLink handle={school.xHandle} className="school-follow-pill" label={`Follow @${displayHandle}`}
+            compactLabel={(displayHandle?.length ?? 0) > 12 ? `@${displayHandle}` : undefined} />
           <span>{schoolColors(school.slug).abbr} beat</span>
         </div>}
       </div>
@@ -52,6 +53,9 @@ export default async function SchoolPage({ params }: { params: Promise<{ slug: s
       </div>
     </main>
     <Footer />
-    <JsonLd data={[breadcrumbSchema([{ name: "Schools", path: "/schools" }, { name: school.name, path }]), storyList(`${school.name} stories`, articles)]} />
+    <JsonLd data={[breadcrumbSchema([{ name: "Schools", path: "/schools" }, { name: school.name, path }]), storyList(`${school.name} stories`, articles),
+      ...(school.xHandle ? [{ "@context": "https://schema.org", "@type": "WebPage", url: canonicalSite + path,
+        about: { "@type": "SportsTeam", name: school.name }, sameAs: `https://x.com/${school.xHandle}` }] : []),
+    ]} />
   </>;
 }

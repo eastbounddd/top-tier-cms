@@ -16,6 +16,7 @@ import { isXStatusUrl, renderStandaloneXLinks } from "@/lib/renderXLinks";
 
 import { ArticlePicker, PromoEditor, schoolPromo, type SearchResult } from "@/components/ArticleInsertDialogs";
 import { escapeHtml, followPromo, promoHtml, safeArticleUrl, videoHtml, withFollowPromo, type Promo } from "@/lib/articleBlocks";
+import { savedStoryLabels, storyLabels, type StoryLabel } from "@/lib/storyLabels";
 import { articleSponsorship } from "@/lib/articleSponsorship";
 import { KeyTakeaways } from "@/components/KeyTakeaways";
 import { articlePresentation, authoredTakeaways, takeawayMax, takeawayMin, takeawaySoftLimit } from "@/lib/articlePresentation";
@@ -43,7 +44,7 @@ type FormState = {
   school: string;
   cover_image_url: string;
   is_top_story: boolean;
-  is_sponsored: boolean;
+  labels: StoryLabel[];
   status: string;
 };
 
@@ -102,7 +103,7 @@ export function ArticleEditor({ initialId, editorRole, displayName }: {
     school: "",
     cover_image_url: "",
     is_top_story: false,
-    is_sponsored: false,
+    labels: [],
     status: "draft",
   });
   const [editorHtml, setEditorHtml] = useState("");
@@ -163,7 +164,7 @@ export function ArticleEditor({ initialId, editorRole, displayName }: {
           school: data.school || "",
           cover_image_url: data.cover_image_url || "",
           is_top_story: Boolean(data.is_top_story),
-          is_sponsored: partner.sponsored,
+          labels: savedStoryLabels(data, partner.sponsored),
           status: data.status === "pending_review" ? "ready_for_review" : data.status || "draft",
         });
 
@@ -696,7 +697,7 @@ const deleteArticle = async () => {
         school: form.school,
         cover_image_url: form.cover_image_url,
         is_top_story: form.is_top_story,
-        is_sponsored: form.is_sponsored ?? false,
+        labels: form.labels,
         status,
         writer_profile_id: writerId || null,
         body: {
@@ -756,6 +757,11 @@ const deleteArticle = async () => {
     const interval = window.setInterval(() => autosaveDraft.current(), 10000);
     return () => window.clearInterval(interval);
   }, []);
+
+  const toggleStoryLabel = (label: StoryLabel, checked: boolean) => setForm(current => {
+    const labels = checked ? [...new Set([...current.labels, label])].slice(0, 2) : current.labels.filter(item => item !== label);
+    return { ...current, labels };
+  });
 
   const words = editorHtml.replace(/<[^>]*>/g, " ").replace(/&nbsp;/g, " ").trim().split(/\s+/).filter(Boolean).length;
   const titleInRange = form.title.length >= 50 && form.title.length <= 65;
@@ -974,9 +980,21 @@ const deleteArticle = async () => {
           <summary>Article Settings</summary>
           <label>URL Slug <input value={form.slug} placeholder={slugify(form.title)} onChange={e => setForm(f => ({ ...f, slug: slugify(e.target.value) }))} /></label>
           {!writerId && <label>Author Name <input value={authorName} onChange={e => setAuthorName(e.target.value)} /></label>}
+          <fieldset className="cms-story-labels"><legend>Labels</legend>
+            <p>Choose up to two.</p>
+            {(Object.keys(storyLabels) as StoryLabel[]).map(label => {
+              const checked = form.labels.includes(label);
+              return <label className="check" key={label}>
+                <input type="checkbox" checked={checked} disabled={!checked && form.labels.length >= 2}
+                  onChange={event => toggleStoryLabel(label, event.target.checked)} />
+                <span><span className={`story-label story-label-${label.toLowerCase()}`}>{label}</span>
+                  <span className="cms-label-help">{storyLabels[label]}</span></span>
+              </label>;
+            })}
+          </fieldset>
           <label className="check"><input type="checkbox" checked={form.is_top_story} onChange={e => setForm(f => ({ ...f, is_top_story: e.target.checked }))} />Feature in Top Stories</label>
-          <label className="check"><input type="checkbox" checked={form.is_sponsored} onChange={e => setForm(f => ({ ...f, is_sponsored: e.target.checked }))} />Sponsored / partner content</label>
-          {form.is_sponsored && <label>Partner name (optional)<input value={metadata.partner_name} onChange={e => setMeta("partner_name", e.target.value)} /></label>}
+          <label className="check"><input type="checkbox" checked={form.labels.includes("PARTNER")} disabled={!form.labels.includes("PARTNER") && form.labels.length >= 2} onChange={e => toggleStoryLabel("PARTNER", e.target.checked)} />Sponsored / partner content</label>
+          {form.labels.includes("PARTNER") && <label>Partner name (optional)<input value={metadata.partner_name} onChange={e => setMeta("partner_name", e.target.value)} /></label>}
           <label className="check"><input type="checkbox" checked={metadata.auto_follow} onChange={e => setMeta("auto_follow", e.target.checked)} />Auto-insert mid-article Follow @TopTierStateX card</label>
           <label className="check"><input type="checkbox" checked={metadata.preferred_source} onChange={e => setMeta("preferred_source", e.target.checked)} />Show Google Preferred Source card</label>
         </details>

@@ -1,3 +1,4 @@
+import { StoryLabels } from "@/components/StoryLabels";
 import { articleCoverAlt } from "@/lib/articleCoverAlt";
 import { writerPath } from "@/lib/writerPaths";
 import Image from "next/image";
@@ -42,17 +43,12 @@ export function EditorialThumbnail({ article, className, sizes }: { article: Art
 
 export function MoreStories({ title, articles, expanded = false }: { title: string; articles: Article[]; expanded?: boolean }) {
   if (!articles.length) return null;
-  let hot = 0;
   return <section className={`rail-card more-stories${expanded ? " more-stories-expanded" : ""}`}>
     <div className="rail-heading"><h2>{title}</h2>{expanded && <Link href="/college-football">View all →</Link>}</div>
     <ul>{articles.map(article => {
-      const fresh = article.published_at && Date.now() - Date.parse(article.published_at) <= 48 * 60 * 60_000;
-      const status = article.category === "Breaking News" ? "Breaking" : /\bflip/i.test(article.title) ? "Trending" :
-        article.is_top_story && hot < 2 ? "Hot" : fresh ? "New" : "";
-      if (status === "Hot") hot++;
       return <li key={article.id}><Link href={articlePath(article.slug)}>
         {expanded && <EditorialThumbnail article={article} className="rail-story-thumb" sizes="240px" />}
-        <div>{expanded && status && <b className={`story-status status-${status.toLowerCase()}`}>{status}</b>}
+        <div><StoryLabels article={article} now={Date.now()} />
           <strong>{article.title}</strong>{!expanded && <span>{article.school || article.category}</span>}</div>
       </Link></li>;
     })}</ul>
@@ -88,8 +84,8 @@ export function SchoolBeatCard({ school, hub = false }: { school: SchoolBeat; hu
   return <section className="rail-card school-beat">
     <h2>{school.xHandle ? `Follow our ${school.name} beat on X` : `${school.name} coverage`}</h2>
     <div className="beat-identity">
-      <SchoolBeatAvatar key={school.slug} src={schoolXAvatar(school.slug)} handle={school.xHandle} abbreviation={schoolColors(school.slug).abbr} />
-      <div>{school.xHandle && <strong>@{school.xHandle}</strong>}<span>Top Tier {school.name}</span></div>
+      <SchoolBeatAvatar key={school.slug} src={schoolXAvatar(school.slug)} handle={school.xDisplayHandle || school.xHandle} abbreviation={schoolColors(school.slug).abbr} />
+      <div>{school.xHandle && <strong>@{school.xDisplayHandle || school.xHandle}</strong>}<span>Top Tier {school.name}</span></div>
     </div>
     <p>Breaking news, recruiting, and gameday notes from the {school.name} beat.</p>
     {school.xHandle && <XAccountLink handle={school.xHandle} className="beat-follow" label="Follow on X →" />}
@@ -117,6 +113,7 @@ export function Story({ article, lead = false, schoolLead = false }: { article: 
     </Link>
     <div className="story-copy">
       <span className="editorial-pill" style={schoolTheme(school?.slug)}>{schoolLead ? article.category : article.school || article.category}</span>
+      <StoryLabels article={article} now={Date.now()} />
       <Heading><Link href={path}>{article.title}</Link></Heading>
       {article.excerpt && <p>{article.excerpt}</p>}
       <div className="story-meta">
@@ -131,6 +128,7 @@ export function Story({ article, lead = false, schoolLead = false }: { article: 
 export function SchoolStoryList({ articles }: { articles: Article[] }) {
   return <div className="school-story-list">{articles.map(article => <article key={article.id}>
     <small>{article.category}</small>
+    <StoryLabels article={article} now={Date.now()} />
     <h3><Link href={articlePath(article.slug)}>{article.title}</Link></h3>
     <div className="story-meta">
       {article.writer ? <Link href={writerPath(article.writer.slug)}>{article.writer.name}</Link> : typeof article.body === "object" && article.body?.author_name}

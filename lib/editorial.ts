@@ -52,7 +52,8 @@ export async function stories({ school, football, basketball, recruiting, catego
   school?: string; football?: boolean; basketball?: boolean; recruiting?: boolean; category?: string; titleContains?: string; writerId?: string; limit?: number | null;
 } = {}): Promise<Article[]> {
   const db = editorialClient();
-  let query = db.from("articles").select("id,slug,title,excerpt,cover_image_url,category,school,published_at,is_top_story,writer_profile_id,byline:body->>author_name,cover_alt:body->>cover_alt,cover_caption:body->>cover_caption,author_name").or(publicArticles());
+  const buildQuery = (withLabels: boolean) => {
+    let query = db.from("articles").select("id,slug,title,excerpt,cover_image_url,category,school,published_at,is_top_story,writer_profile_id,byline:body->>author_name,cover_alt:body->>cover_alt,cover_caption:body->>cover_caption,author_name,is_sponsored" + (withLabels ? ",labels" : "")).or(publicArticles());
   if (school === "LSU") {
     // Legacy LSU coverage predates school tags. Include LSU headlines only when no school is set.
     query = query.or('school.ilike.lsu,body->>secondary_school.eq.LSU,and(or(school.is.null,school.eq.""),title.ilike.%LSU%)');
@@ -63,13 +64,19 @@ export async function stories({ school, football, basketball, recruiting, catego
   if (writerId) query = query.eq("writer_profile_id", writerId);
   if (titleContains) query = query.ilike("title", `%${titleContains}%`);
   if (recruiting) query = query.or("category.eq.Recruiting,school.eq.Recruiting").gte("published_at", new Date(Math.floor(Date.now() / 86400000) * 86400000 - 14 * 86400000).toISOString());
-  const ordered = query.order("published_at", { ascending: false, nullsFirst: false }).order("id", { ascending: false });
-  const rows = [];
+  return query.order("published_at", { ascending: false, nullsFirst: false }).order("id", { ascending: false });
+  };
+  let ordered = buildQuery(true);
+  const rows: (Article & { byline?: string; author_name?: string; cover_alt?: string; cover_caption?: string })[] = [];
   const batch = limit ?? 500;
   for (let offset = 0; ; offset += batch) {
-    const { data, error } = await ordered.range(offset, offset + batch - 1);
+    let { data, error } = await ordered.range(offset, offset + batch - 1);
+    if (offset === 0 && error?.code === "42703" && error.message.includes("labels")) {
+      ordered = buildQuery(false);
+      ({ data, error } = await ordered.range(offset, offset + batch - 1));
+    }
     if (error) throw new Error(error.message);
-    rows.push(...(data ?? []));
+    rows.push(...((data ?? []) as unknown as typeof rows));
     if (limit !== null || !data || data.length < batch) break;
   }
   return attachWriters(db, rows.map(row => ({

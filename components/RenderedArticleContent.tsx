@@ -6,9 +6,11 @@ import { splitRenderedArticle } from "@/lib/renderXLinks";
 const TweetEmbed = memo(function TweetEmbed({
   url,
   tweetId,
+  sponsored,
 }: {
   url: string;
   tweetId: string;
+  sponsored: boolean;
 }) {
   const embedUrl = new URL("https://platform.twitter.com/embed/Tweet.html");
   embedUrl.searchParams.set("id", tweetId);
@@ -32,7 +34,7 @@ const TweetEmbed = memo(function TweetEmbed({
         className="x-post-source-link"
         href={url}
         target="_blank"
-        rel="noopener noreferrer"
+        rel={sponsored ? "sponsored noopener noreferrer" : "noopener noreferrer"}
       >
         View post on X
       </a>
@@ -43,9 +45,11 @@ const TweetEmbed = memo(function TweetEmbed({
 export function RenderedArticleContent({
   html,
   className,
+  sponsored = false,
 }: {
   html: string;
   className: string;
+  sponsored?: boolean;
 }) {
   const segments = useMemo(() => splitRenderedArticle(html), [html]);
 
@@ -57,6 +61,7 @@ export function RenderedArticleContent({
             key={`tweet-${segment.tweetId}-${segment.occurrence}`}
             url={segment.url}
             tweetId={segment.tweetId}
+            sponsored={sponsored}
           />
         ) : (
           <div
