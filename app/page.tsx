@@ -12,7 +12,9 @@ import type { CSSProperties } from "react";
 
 export const revalidate = 60;
 export const dynamic = "force-static";
-const headline = "Stay on top of college sports";
+const headlineStart = "Stay on top of";
+const headlineEnd = "college sports";
+const headline = headlineStart + " " + headlineEnd;
 const subheading = "College sports news, analysis, and original reporting from Top Tier";
 const homeMetadata = pageMetadata(headline, "Independent college sports news, analysis, recruiting updates and original reporting from Top Tier.", "/");
 export const metadata = {
@@ -75,7 +77,7 @@ export default async function Home() {
   return <>
     <Header />
     <main id="main-content" className="editorial shell">
-      <h1 className="editorial-kicker home-audit-headline">{headline}</h1>
+      <h1 className="home-audit-headline">{headlineStart} <span>{headlineEnd}</span></h1>
       <p className="home-audit-subheading">{subheading}</p>
       <div className="newsroom-grid home-hero">
         <section className="home-hero-lead" aria-label="Featured stories">
