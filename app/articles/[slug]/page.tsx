@@ -8,7 +8,7 @@ import { publicArticles } from "@/lib/articleWorkflow";
 import { breadcrumbSchema, schemaJson } from "@/lib/structuredData";
 import Link from "next/link";
 import Image from "next/image";
-import { attachWriters, writerXHandle } from "@/lib/writers";
+import { writerXHandle, type Writer } from "@/lib/writers";
 import { WriterCard } from "@/components/WriterCard";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
@@ -16,14 +16,16 @@ import { cache } from "react";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { RenderedArticleContent } from "@/components/RenderedArticleContent";
-import { ArticleShare } from "@/components/ArticleShare";
+import { ArticleByline } from "@/components/ArticleByline";
+import { topTierLogo } from "@/lib/brand";
+import { writerProfilePhoto } from "@/lib/writerPhoto";
 import { ArticleRecirculation } from "@/components/ArticleRecirculation";
 import { PreferredSource } from "@/components/PreferredSource";
 import { PreferredSourceButton } from "@/components/PreferredSourceButton";
 import { EditorialNewsletter, JsonLd, LiveBoards, MoreStories, QuickJump, SchoolBeatCard } from "@/components/Editorial";
-import { articlePath, editorialClient, editorialDate, itemList, legacyArticleSlug, schoolByName, stories } from "@/lib/editorial";
+import { articlePath, editorialClient, itemList, legacyArticleSlug, schoolByName, stories } from "@/lib/editorial";
 import { articlePresentation, authoredTakeaways, takeawayLead } from "@/lib/articlePresentation";
-import { schoolTheme } from "@/lib/schoolColors";
+import { schoolTheme, schoolXAvatar } from "@/lib/schoolColors";
 import { getArticleImage, getSocialImageUrl, getXShareArticleUrl, siteUrl } from "@/lib/articleSocialImage";
 import { coverWidth, coverHeight } from "@/lib/articleCover";
 
@@ -33,13 +35,12 @@ export const generateStaticParams = () => [];
 
 const getArticle = cache(async (slug: string) => {
   const supabase = editorialClient();
-  const lookup = (value: string) => supabase.from("articles").select("*").eq("slug", value).or(publicArticles()).maybeSingle();
+  const lookup = (value: string) => supabase.from("articles").select("*,writer:writer_profiles!writer_profile_id(*)").eq("slug", value).or(publicArticles()).maybeSingle();
   let { data, error } = await lookup(slug);
   if (!data && !error && slug === legacyArticleSlug) ({ data, error } = await lookup("n"));
   if (error) throw new Error(error.message);
 
-  if (!data) return null;
-  return (await attachWriters(supabase, [data]))[0];
+  return data ? { ...data, writer: data.writer as Writer | null } : null;
 });
 
 export async function generateMetadata({
@@ -115,6 +116,12 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
   const school = schoolByName(data.school);
   const schoolSlug = school?.slug || data.school?.trim().toLowerCase().replace(/\s+/g, "-");
   const beat = school;
+  const photo = writerProfilePhoto(writer?.profile_image);
+  const staff = /^@?top\s*tier(?:[\s-]|$)/i.test(author);
+  const staffSchool = staff ? schoolByName(author.replace(/^@?top\s*tier\s*[-\u2013\u2014]?\s*/i, "").split(/\s+[-\u2013\u2014]\s+/)[0]) || school : undefined;
+  const staffAvatar = staffSchool && schoolXAvatar(staffSchool.slug);
+  const brandLogo = staff && !photo && !staffAvatar;
+  const bylineImage = photo || staffAvatar || (brandLogo ? topTierLogo.src : undefined);
   const taggedSchools = [...new Set([data.school, data.body?.secondary_school].filter((name): name is string =>
     typeof name === "string" && Boolean(name.trim())))];
   const handle = writer ? writerXHandle(writer) : null;
@@ -176,7 +183,7 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
     headline: data.title, description: data.excerpt || (takeaways[0] ? Object.values(takeawayLead(takeaways[0])).join("") : data.title),
     image: [{ "@type": "ImageObject", url: socialImage, width: coverWidth, height: coverHeight }],
     datePublished: published, dateModified: modified,
-    author: [{ "@type": /^@?tops*tier/i.test(author) ? "Organization" : "Person", name: author, ...(writer ? { url: siteUrl + writerPath(writer.slug) } : {}) }],
+    author: [{ "@type": /^@?tops*tier/i.test(author) ? "Organization" : "Person", name: author, ...(writer ? { url: siteUrl + writerPath(writer.slug) } : {}), ...(photo ? { image: new URL(photo, siteUrl).href } : {}) }],
     publisher: { "@type": "Organization", ...organization, name: "Top Tier Media" }, mainEntityOfPage: canonical,
     ...(taggedSchools.length ? { about: taggedSchools.map(name => ({ "@type": "Thing", name })), keywords: taggedSchools.join(", ") } : {}),
   };
@@ -197,15 +204,9 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
             {partnerName ? `This article is sponsored by ${partnerName}.` : "This article is sponsored."} Top Tier may earn a commission.
           </p>}
           {data.excerpt && <p className="editorial-dek">{data.excerpt}</p>}
-          <div className="editorial-byline">
-            <div>By {writer ? <Link href={writerPath(writer.slug)}>{author}</Link> : <strong>{author}</strong>}
-              <div className="editorial-dates">
-                {published && <span>Published <time dateTime={published}>{editorialDate(published, true)}</time></span>}
-                {modified && modified !== published && <span>Updated <time dateTime={modified}>{editorialDate(modified, true)}</time></span>}
-              </div>
-            </div>
-            <ArticleShare title={data.title} url={canonical} xUrl={getXShareArticleUrl(data.slug, image)} />
-          </div>
+          <ArticleByline name={author} profile={writer ? writerPath(writer.slug) : undefined}
+            image={bylineImage} brandLogo={brandLogo} published={published} modified={modified}
+            title={data.title} url={canonical} xUrl={getXShareArticleUrl(data.slug, image)} />
           <PreferredSourceButton school={school} />
           {data.cover_image_url && <figure className="editorial-cover">
             <div className="article-cover-frame">
