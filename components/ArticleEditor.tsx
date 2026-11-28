@@ -10,6 +10,7 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { saveArticle } from "@/app/dashboard/new/actions";
+import { articleCategories } from "@/lib/articleCategories";
 import { articleSchoolOptions } from "@/lib/schools";
 import { RenderedArticleContent } from "@/components/RenderedArticleContent";
 import { isXStatusUrl, renderStandaloneXLinks } from "@/lib/renderXLinks";
@@ -948,7 +949,7 @@ const deleteArticle = async () => {
         </label>
         <div className="two-col">
           <label>Category <select value={form.category} onChange={e => setForm(f => ({ ...f, category: e.target.value }))}>
-            {Array.from(new Set(["College Football", "College Basketball", "Breaking News", "Recruiting", "Transfer Portal", "Coaching", "Other News", form.category])).map(category => <option key={category}>{category}</option>)}
+            {Array.from(new Set([...articleCategories, form.category])).map(category => <option key={category}>{category}</option>)}
           </select></label>
           <label>Writer profile <select value={writerId} onChange={e => {
             const writer = writers.find(item => item.id === e.target.value);
