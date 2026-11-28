@@ -4,7 +4,8 @@ import { Footer } from "@/components/Footer";
 import { UpcomingGames } from "@/components/UpcomingGames";
 import { NewsCard } from "@/components/NewsFeed";
 import { EditorialNewsletter, JsonLd, LiveBoards, MoreStories, Story, StoryGrid, TeamGrid } from "@/components/Editorial";
-import { articlePath, basketballStories, boards, footballCategories, stories, storyList } from "@/lib/editorial";
+import { articlePath, basketballStories, boards, stories, storyList } from "@/lib/editorial";
+import { canLead, FOOTBALL_WINDOW_HOURS, LEAD_WINDOW_HOURS, rankStories, selectLead, storyCutoff } from "@/lib/storyRank";
 import { pageMetadata } from "@/lib/pageMetadata";
 import type { Article } from "@/components/ArticleCard";
 import type { CSSProperties } from "react";
@@ -22,11 +23,27 @@ export const metadata = {
 };
 
 export default async function Home() {
-  const [articles, recruiting, basketball] = await Promise.all([stories({ limit: 30 }), stories({ recruiting: true, limit: 5 }), basketballStories(5)]);
+  // Reuse a single minute boundary for scores and cacheable query cutoffs.
+  const now = Math.floor(Date.now() / 60_000) * 60_000;
+  const leadSince = storyCutoff(now, LEAD_WINDOW_HOURS);
+  const footballSince = storyCutoff(now, FOOTBALL_WINDOW_HOURS);
+  const [articles, recruiting, basketball, recentLead, recentFootball] = await Promise.all([
+    stories({ limit: 30 }),
+    stories({ recruiting: true, limit: 5 }),
+    basketballStories(5),
+    stories({ publishedSince: leadSince, limit: null }),
+    stories({ football: true, publishedSince: footballSince, limit: 40 }),
+  ]);
   const hoops = basketball.slice(0, 4);
   const used = new Set([...boards.map(board => board.path), ...hoops.map(article => articlePath(article.slug))]);
   const candidates = articles.filter(article => !used.has(articlePath(article.slug)));
-  const lead = candidates.find(article => article.is_top_story) ?? candidates[0];
+  const available = (article: Article) => !used.has(articlePath(article.slug));
+  let lead = selectLead(recentLead.filter(available), now) ?? candidates.find(canLead);
+  for (let offset = 30; !lead && articles.length === 30; offset += 30) {
+    const page = await stories({ limit: 30, offset });
+    lead = page.find(article => available(article) && canLead(article));
+    if (page.length < 30) break;
+  }
   if (lead) used.add(articlePath(lead.slug));
   const take = (pool: Article[], count: number) => {
     const selected: Article[] = [];
@@ -40,7 +57,19 @@ export default async function Home() {
     return selected;
   };
   const secondary = take(candidates, 4);
-  const moreFootball = take(candidates.filter(article => footballCategories.includes(article.category)), 9);
+  const countAvailable = (pool: Article[]) => new Set(pool.filter(available).map(article => articlePath(article.slug))).size;
+  // Load additional recent pages only if dedupe leaves the first batch short.
+  let recentPage = recentFootball;
+  for (let offset = 40; countAvailable(recentFootball) < 9 && recentPage.length === 40; offset += 40) {
+    recentPage = await stories({ football: true, publishedSince: footballSince, limit: 40, offset });
+    recentFootball.push(...recentPage);
+  }
+  const moreFootball = take(rankStories(recentFootball, now).map(({ article }) => article), 9);
+  for (let offset = 0; moreFootball.length < 9; offset += 40) {
+    const page = await stories({ football: true, publishedBefore: footballSince, limit: 40, offset });
+    moreFootball.push(...take(page, 9 - moreFootball.length));
+    if (page.length < 40) break;
+  }
   const latest = take(candidates, 6);
   const recruits = take(recruiting, 2);
   return <>

@@ -48,8 +48,8 @@ export const liveTrackers = cache(async () => {
   });
 });
 
-export async function stories({ school, football, basketball, recruiting, category, titleContains, writerId, limit = 24 }: {
-  school?: string; football?: boolean; basketball?: boolean; recruiting?: boolean; category?: string; titleContains?: string; writerId?: string; limit?: number | null;
+export async function stories({ school, football, basketball, recruiting, category, titleContains, writerId, publishedSince, publishedBefore, offset: startOffset = 0, limit = 24 }: {
+  school?: string; football?: boolean; basketball?: boolean; recruiting?: boolean; category?: string; titleContains?: string; writerId?: string; publishedSince?: string; publishedBefore?: string; offset?: number; limit?: number | null;
 } = {}): Promise<Article[]> {
   const db = editorialClient();
   const buildQuery = (withLabels: boolean) => {
@@ -64,14 +64,16 @@ export async function stories({ school, football, basketball, recruiting, catego
   if (writerId) query = query.eq("writer_profile_id", writerId);
   if (titleContains) query = query.ilike("title", `%${titleContains}%`);
   if (recruiting) query = query.or("category.eq.Recruiting,school.eq.Recruiting").gte("published_at", new Date(Math.floor(Date.now() / 86400000) * 86400000 - 14 * 86400000).toISOString());
+  if (publishedSince) query = query.gte("published_at", publishedSince);
+  if (publishedBefore) query = query.lt("published_at", publishedBefore);
   return query.order("published_at", { ascending: false, nullsFirst: false }).order("id", { ascending: false });
   };
   let ordered = buildQuery(true);
   const rows: (Article & { byline?: string; author_name?: string; cover_alt?: string; cover_caption?: string })[] = [];
   const batch = limit ?? 500;
-  for (let offset = 0; ; offset += batch) {
+  for (let offset = startOffset; ; offset += batch) {
     let { data, error } = await ordered.range(offset, offset + batch - 1);
-    if (offset === 0 && error?.code === "42703" && error.message.includes("labels")) {
+    if (offset === startOffset && error?.code === "42703" && error.message.includes("labels")) {
       ordered = buildQuery(false);
       ({ data, error } = await ordered.range(offset, offset + batch - 1));
     }
