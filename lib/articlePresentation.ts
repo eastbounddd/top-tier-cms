@@ -29,7 +29,75 @@ function textBlocks(html: string) {
     .filter(block => block.text);
 }
 
-export function articlePresentation(html: string, excerpt?: string | null) {
+export const takeawayMin = 3;
+export const takeawayMax = 5;
+export const takeawaySoftLimit = 160;
+
+export function authoredTakeaways(body: unknown): string[] {
+  if (!body || typeof body !== "object") return [];
+  const values = "keyTakeaways" in body ? body.keyTakeaways : "takeaways" in body ? body.takeaways : null;
+  return Array.isArray(values) ? values.filter((value): value is string => typeof value === "string" && Boolean(value.trim())) : [];
+}
+
+export function takeawayLead(text: string) {
+  const match = text.match(/^\*\*([^*]+)\*\*([\s\S]*)$/);
+  return match ? { lead: match[1], rest: match[2] } : { lead: "", rest: text };
+}
+
+function extractTakeawayList(html: string) {
+  const bullets: string[] = [];
+  const body = html.replace(/<h2\b[^>]*>((?:(?!<\/?h2\b)[\s\S])*?)<\/h2>((?:\s|&nbsp;|<p[^>]*>\s*(?:<br\s*\/?>|&nbsp;)?\s*<\/p>)*)((?:<div\b[^>]*>\s*)?)<ul\b[^>]*>((?:(?!<ul\b)[\s\S])*?)<\/ul>(\s*<\/div>)?/gi,
+    (section, heading: string, _gap: string, wrapper: string, list: string, closing?: string) => {
+      if (!/^key takeaways\s*:?$/i.test(plainText(heading))) return section;
+      const items = [...list.matchAll(/<li\b[^>]*>([\s\S]*?)<\/li>/gi)]
+        .map(([, item]) => {
+          const bold = item.match(/^\s*(?:<p\b[^>]*>\s*)?<(strong|b)\b[^>]*>([\s\S]*?)<\/\1>([\s\S]*)$/i);
+          if (!bold) return plainText(item);
+          const lead = plainText(bold[2]);
+          const rest = plainText(bold[3]);
+          return lead ? "**" + lead + "**" + (rest && !/^[:;,.!?]/.test(rest) ? " " + rest : rest) : rest;
+        }).filter(Boolean);
+      if (!items.length) return section;
+      bullets.push(...items);
+      return wrapper ? (closing ? "" : wrapper) : (closing ?? "");
+    });
+  return { body, bullets };
+}
+
+const sentences = new Intl.Segmenter("en", { granularity: "sentence" });
+const words = (text: string) => text.toLowerCase().match(/[\p{L}\p{N}]+(?:['\u2019-][\p{L}\p{N}]+)*/gu) || [];
+const stripEllipses = (text: string) => text.trim().replace(/(?:\s*(?:\.{3,}|\u2026))+$/, "").trim();
+
+function fallbackTakeaways(html: string, excerpt?: string | null) {
+  const bullets: string[] = [];
+  const keys = new Set<string>();
+  const add = (text: string) => {
+    const clean = stripEllipses(text);
+    const tokens = words(clean);
+    const key = tokens.join(" ");
+    if (tokens.length < 6 || clean.length > 240 || keys.has(key)) return;
+    keys.add(key);
+    bullets.push(clean);
+  };
+  for (const { text } of textBlocks(html)) {
+    for (const { segment } of sentences.segment(text)) {
+      add(segment);
+      if (bullets.length === 4) break;
+    }
+    if (bullets.length === 4) break;
+  }
+  if (excerpt) {
+    const repeatsBullet = [...sentences.segment(excerpt)].some(({ segment }) => keys.has(words(stripEllipses(segment)).join(" ")));
+    const count = bullets.length;
+    if (!repeatsBullet) add(excerpt);
+    if (bullets.length > count) bullets.unshift(bullets.pop()!);
+  }
+  return bullets.length >= 2 ? bullets.slice(0, 4) : [];
+}
+
+export function articlePresentation(html: string, excerpt?: string | null, authored: string[] = []) {
+  const extracted = extractTakeawayList(html);
+  html = extracted.body;
   const matches = [...html.matchAll(headings)];
   const ranked = matches.flatMap(match => {
     const name = plainText(match[3]);
@@ -55,8 +123,7 @@ export function articlePresentation(html: string, excerpt?: string | null) {
     }
   }
   const methodology = paragraphs.find(text => /\b(?:ranked by|ranking is based on|criteria|methodology|evaluated)\b/i.test(text));
-  const nuggets = textBlocks(html).map(({ text }) => text.match(/^.+?[.!?](?=\s+[A-Z]|$)/)?.[0] ?? text);
-  const takeaways = [...new Set([quickAnswer, ...paragraphs, ...nuggets].filter(text => text.length > 10 && text.length <= 240))].slice(0, 4);
+  const takeaways = authored.length ? authored : extracted.bullets.length ? extracted.bullets : fallbackTakeaways(html, excerpt);
 
   let body = html;
   for (const { match, number, anchor } of [...ranks].reverse()) {

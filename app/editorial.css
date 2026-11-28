@@ -208,6 +208,8 @@ body:has(.editorial){background:var(--tt-paper);color:#18181b}
 .editorial-cover .article-cover-frame{margin:0}
 .editorial-cover figcaption{font-size:12px;color:#71717a;margin-top:5px}
 .takeaways{background:#fff;border-left:4px solid var(--school-ink,var(--tt-red));padding:13px 16px;margin:0 0 18px}
+.key-takeaways{border-left-color:#0c2340}
+.key-takeaways-school{border-left-color:var(--school-primary,#0c2340)}
 .takeaways h2{font-size:22px;margin:0 0 5px}
 .takeaways p,.takeaways ul{margin:0;color:#27272a;font-size:14.5px;line-height:1.55}
 .takeaways ul{padding-left:20px}
@@ -400,3 +402,6 @@ body:has(.editorial){background:var(--tt-paper);color:#18181b}
 .preferred-source-pill{box-sizing:border-box;display:flex;width:100%;align-items:center;justify-content:center;gap:10px;margin:16px 0;padding:10px 20px;border-radius:9999px;font-size:15px;font-weight:600;letter-spacing:-.025em;line-height:1.4;text-align:center;transition:opacity .15s ease}
 .preferred-source-pill:hover{opacity:.9}
 .preferred-source-pill-icon{display:grid;place-items:center;flex:none;width:22px;height:22px;border-radius:50%;background:#fff}
+
+.cms-takeaway-field{margin:10px 0}
+.cms-takeaway-field>button{margin-top:5px}

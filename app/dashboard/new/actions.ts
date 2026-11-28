@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { authoredTakeaways, takeawayMax, takeawayMin } from "@/lib/articlePresentation";
 import { canPublish, chicagoDate } from "@/lib/articleWorkflow";
 import { createClient } from "@/lib/supabase/server";
 
@@ -16,7 +17,7 @@ type ArticleFields = {
   is_sponsored: boolean;
   status: string;
   writer_profile_id: string | null;
-  body: { html: string; author_name: string; [key: string]: unknown };
+  body: { html: string; author_name: string; keyTakeaways?: string[]; [key: string]: unknown };
   schedule?: string;
 };
 
@@ -44,6 +45,17 @@ export async function saveArticle(id: string | null, fields: ArticleFields, upda
   if (typeof fields.title !== "string" || !fields.title.trim() || typeof fields.slug !== "string" || !fields.slug.trim() ||
       typeof fields.body?.html !== "string" || !fields.body.author_name?.trim()) return { error: "Add a headline, URL slug and byline." };
   const previous = existing?.data;
+  const newTakeaways = fields.body.keyTakeaways;
+  if (newTakeaways !== undefined) {
+    if (!Array.isArray(newTakeaways) || newTakeaways.some(value => typeof value !== "string" || !value.trim()) ||
+        newTakeaways.length > takeawayMax) return { error: "Add up to five takeaways." };
+    const unchanged = JSON.stringify(newTakeaways) === JSON.stringify(authoredTakeaways(previous?.body).map(text => text.trim()));
+    const legacyUnchanged = unchanged && (previous?.status === "published" ||
+      (previous?.body?.keyTakeaways === undefined && Array.isArray(previous?.body?.takeaways)));
+    if (fields.status !== "draft" && !legacyUnchanged && newTakeaways.length > 0 && newTakeaways.length < takeawayMin) {
+      return { error: "Add at least three takeaways or leave the list empty." };
+    }
+  }
   if (["scheduled", "published"].includes(fields.status) && previous?.status !== "published" &&
       (fields.slug.length < 8 || !/^[a-z0-9]+(?:-[a-z0-9]+)+$/.test(fields.slug))) {
     return { error: "Use a descriptive URL slug of at least 8 characters with hyphen-separated words." };

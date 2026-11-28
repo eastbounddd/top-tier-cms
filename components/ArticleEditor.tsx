@@ -16,6 +16,8 @@ import { isXStatusUrl, renderStandaloneXLinks } from "@/lib/renderXLinks";
 
 import { ArticlePicker, PromoEditor, schoolPromo, type SearchResult } from "@/components/ArticleInsertDialogs";
 import { escapeHtml, followPromo, promoHtml, safeArticleUrl, videoHtml, withFollowPromo, type Promo } from "@/lib/articleBlocks";
+import { KeyTakeaways } from "@/components/KeyTakeaways";
+import { articlePresentation, authoredTakeaways, takeawayMax, takeawayMin, takeawaySoftLimit } from "@/lib/articlePresentation";
 import { PreferredSource } from "@/components/PreferredSource";
 
 const templates = {
@@ -71,7 +73,7 @@ export function ArticleEditor({ initialId, editorRole, displayName }: {
   const [savedAt, setSavedAt] = useState("");
   const [tab, setTab] = useState("Article");
   const [metadata, setMetadata] = useState({
-    cover_alt: "", cover_credit: "", cover_width: 0, secondary_school: "", takeaways: ["", "", ""],
+    cover_alt: "", cover_credit: "", cover_width: 0, secondary_school: "", keyTakeaways: [] as string[],
     auto_follow: false, preferred_source: true,
   });
   const updatedAt = useRef<string | null>(null);
@@ -173,7 +175,7 @@ export function ArticleEditor({ initialId, editorRole, displayName }: {
           setMetadata({
             cover_alt: body.cover_alt || "", cover_credit: body.cover_credit || "",
             cover_width: Number(body.cover_width) || 0, secondary_school: body.secondary_school || "",
-            takeaways: Array.from({ length: 3 }, (_, index) => String(body.takeaways?.[index] || "")),
+            keyTakeaways: authoredTakeaways(body),
             auto_follow: body.auto_follow === true, preferred_source: body.preferred_source !== false,
           });
         }
@@ -698,7 +700,7 @@ const deleteArticle = async () => {
             .replace(/<h1\b[^>]*>/gi, "")
             .replace(/<\/h1>/gi, ""),
           ...metadata,
-          takeaways: metadata.takeaways.map(text => text.trim()).filter(Boolean).slice(0, 3),
+          keyTakeaways: metadata.keyTakeaways.map(text => text.trim()).filter(Boolean),
           secondary_school: metadata.secondary_school === form.school ? "" : metadata.secondary_school,
           author_name: authorName.trim(),
         },
@@ -767,7 +769,7 @@ const deleteArticle = async () => {
     </select>
   </label>;
   const previewImage = coverPreview || form.cover_image_url;
-  const takeaways = metadata.takeaways.map(text => text.trim()).filter(Boolean);
+  const { body: previewBody, takeaways } = articlePresentation(editorHtml, form.excerpt, metadata.keyTakeaways.map(text => text.trim()).filter(Boolean));
   const locked = Boolean(initialId && initialId !== loadedArticleId) ||
     (!editorRole && ["published", "scheduled"].includes(form.status));
   return (
@@ -948,9 +950,20 @@ const deleteArticle = async () => {
           {selectSchool("Secondary School", metadata.secondary_school, school => setMeta("secondary_school", school))}
         </div>
         <details className="cms-editor-drawer">
-          <summary>Key Takeaways / Quick Hits</summary>
-          {metadata.takeaways.map((text, index) => <label key={index}>Takeaway {index + 1}<input value={text} maxLength={240}
-            onChange={e => setMeta("takeaways", metadata.takeaways.map((item, i) => i === index ? e.target.value : item))} /></label>)}
+          <summary>Key Takeaways</summary>
+          <p>Add {takeawayMin}-{takeawayMax} bullets. Start a bullet with **Bold text** to emphasize its lead-in.</p>
+          {metadata.keyTakeaways.map((text, index) => <div className="cms-takeaway-field" key={index}>
+            <label>Takeaway {index + 1}
+            <input value={text} onChange={e => setMeta("keyTakeaways", metadata.keyTakeaways.map((item, i) => i === index ? e.target.value : item))} />
+            <span className={text.length > takeawaySoftLimit ? "cms-warning" : undefined}>{text.length} / {takeawaySoftLimit} suggested characters</span>
+            </label>
+            <button type="button" onClick={() => {
+              setMeta("keyTakeaways", metadata.keyTakeaways.filter((_, i) => i !== index));
+              markChanged();
+            }}>Remove takeaway {index + 1}</button>
+          </div>)}
+          <button type="button" disabled={metadata.keyTakeaways.length >= takeawayMax} onClick={() =>
+            setMeta("keyTakeaways", [...metadata.keyTakeaways, ""])}>Add takeaway</button>
         </details>
         <details className="cms-editor-drawer" open={!writerId && !authorName}>
           <summary>Article Settings</summary>
@@ -1006,8 +1019,8 @@ const deleteArticle = async () => {
           <p>{form.excerpt}</p>{authorName && <p>By {authorName}</p>}
           {previewImage && <figure><div className="preview-image"><Image unoptimized width={1600} height={900} src={previewImage} alt={metadata.cover_alt} /></div>
             {metadata.cover_credit && <figcaption>{metadata.cover_credit}</figcaption>}</figure>}
-          {takeaways.length > 0 && <section className="takeaways"><h3>Key Takeaways</h3><ul>{takeaways.map((text, index) => <li key={index}>{text}</li>)}</ul></section>}
-          <RenderedArticleContent html={withFollowPromo(editorHtml, metadata.auto_follow)} className="prose editorial-prose" />
+          <KeyTakeaways bullets={takeaways} />
+          <RenderedArticleContent html={withFollowPromo(previewBody, metadata.auto_follow)} className="prose editorial-prose" />
           {metadata.preferred_source && <PreferredSource />}
         </>}
       </aside>

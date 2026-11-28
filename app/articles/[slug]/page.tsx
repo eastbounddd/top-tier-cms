@@ -1,3 +1,4 @@
+import { KeyTakeaways } from "@/components/KeyTakeaways";
 import { withFollowPromo } from "@/lib/articleBlocks";
 import { publicArticles } from "@/lib/articleWorkflow";
 import { breadcrumbSchema, schemaJson } from "@/lib/structuredData";
@@ -17,7 +18,7 @@ import { PreferredSource } from "@/components/PreferredSource";
 import { PreferredSourceButton } from "@/components/PreferredSourceButton";
 import { EditorialNewsletter, JsonLd, LiveBoards, MoreStories, QuickJump, SchoolBeatCard } from "@/components/Editorial";
 import { articlePath, editorialClient, editorialDate, itemList, legacyArticleSlug, schoolByName, stories } from "@/lib/editorial";
-import { articlePresentation } from "@/lib/articlePresentation";
+import { articlePresentation, authoredTakeaways, takeawayLead } from "@/lib/articlePresentation";
 import { schoolTheme } from "@/lib/schoolColors";
 import { getArticleImage, getSocialImageUrl, getXShareArticleUrl, siteUrl } from "@/lib/articleSocialImage";
 import { coverWidth, coverHeight } from "@/lib/articleCover";
@@ -104,7 +105,7 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
   if (!data) notFound();
 
   const rawBody = (typeof data.body === "object" ? data.body?.html : data.body) || data.body_html || "";
-  const { body, ranks, methodology, criteria, takeaways } = articlePresentation(rawBody, data.excerpt);
+  const { body, ranks, methodology, criteria, takeaways } = articlePresentation(rawBody, data.excerpt, authoredTakeaways(data.body));
   const writer = data.writer;
   const author = writer?.name || (typeof data.body === "object" && data.body?.author_name) || data.author_name || "Top Tier";
   const school = schoolByName(data.school);
@@ -112,8 +113,6 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
   const beat = school;
   const taggedSchools = [...new Set([data.school, data.body?.secondary_school].filter((name): name is string =>
     typeof name === "string" && Boolean(name.trim())))];
-  const customTakeaways = Array.isArray(data.body?.takeaways) ? data.body.takeaways.filter(
-    (value: unknown): value is string => typeof value === "string" && Boolean(value.trim())).slice(0, 3) : [];
   const handle = writer ? writerXHandle(writer) : null;
   const coverAlt = typeof data.body?.cover_alt === "string" && data.body.cover_alt.trim() ? data.body.cover_alt : data.title;
   const football = { name: "College Football", path: "/college-football" };
@@ -144,7 +143,7 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
   const organization = { "@id": `${siteUrl}/#organization` };
   const news = {
     "@context": "https://schema.org", "@type": "NewsArticle",
-    headline: data.title, description: data.excerpt || takeaways[0] || data.title,
+    headline: data.title, description: data.excerpt || (takeaways[0] ? Object.values(takeawayLead(takeaways[0])).join("") : data.title),
     image: [{ "@type": "ImageObject", url: socialImage, width: coverWidth, height: coverHeight }],
     datePublished: published, dateModified: modified,
     author: [{ "@type": /^@?tops*tier/i.test(author) ? "Organization" : "Person", name: author, ...(writer ? { url: `${siteUrl}/author/${writer.slug}` } : {}) }],
@@ -182,18 +181,13 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
             </div>
             {(caption || credit) && <figcaption>{[caption, credit].filter(Boolean).join(" · ")}</figcaption>}
           </figure>}
-          {customTakeaways.length > 0 && <section className="takeaways"><h2>Key Takeaways</h2><ul>
-            {customTakeaways.map((text: string, index: number) => <li key={index}>{text}</li>)}
-          </ul></section>}
+          <KeyTakeaways bullets={takeaways} schoolAccent={Boolean(school)} />
           {ranks.length > 0 ? <>
             {(criteria.length > 0 || methodology) && <section className="takeaways"><h2>Ranking Criteria</h2>
               {criteria.length > 0 ? <ul>{criteria.map(text => <li key={text}>{text}</li>)}</ul> : <p>{methodology}</p>}
             </section>}
             <nav className="rank-jumps" aria-label="Jump to rank"><ul>{rankLinks}</ul></nav>
-          </> : !Array.isArray(data.body?.takeaways) && takeaways.length > 0 && <section className="takeaways">
-            <h2>{takeaways.length > 1 ? "Key Takeaways" : "Quick Answer"}</h2>
-            <ul>{takeaways.map(text => <li key={text}>{text}</li>)}</ul>
-          </section>}
+          </> : null}
           <RenderedArticleContent html={withFollowPromo(body, data.body?.auto_follow === true)} className="prose editorial-prose" />
           {writer && <WriterCard writer={writer} />}
         </article>
