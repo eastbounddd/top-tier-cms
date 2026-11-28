@@ -1,5 +1,6 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
+import { canonicalWriterSlug, writerPath } from "@/lib/writerPaths";
 import { articlePath } from "@/lib/articlePaths";
 
 export async function middleware(request: NextRequest) {
@@ -7,6 +8,18 @@ export async function middleware(request: NextRequest) {
     const destination = request.nextUrl.clone();
     destination.pathname = articlePath("n");
     return NextResponse.redirect(destination, 301);
+  }
+  const legacyWriter = request.nextUrl.pathname.match(/^\/(author|writers)\/([^/]+)$/);
+  if (legacyWriter) {
+    const [, section, slug] = legacyWriter;
+    if (section === "author" || canonicalWriterSlug(slug) !== slug) {
+      const destination = request.nextUrl.clone();
+      // Preserve an already encoded legacy path segment.
+      destination.pathname = section === "author" && canonicalWriterSlug(slug) === slug
+        ? "/writers/" + slug : writerPath(slug);
+      return NextResponse.redirect(destination, 301);
+    }
+    return NextResponse.next();
   }
   let response = NextResponse.next({ request });
   const supabase = createServerClient(
@@ -36,5 +49,5 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/dashboard/:path*", "/login", "/articles/n"]
+  matcher: ["/dashboard/:path*", "/login", "/articles/n", "/author/:slug", "/writers/:slug"]
 };

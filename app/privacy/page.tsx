@@ -1,13 +1,8 @@
-import type { Metadata } from "next";
+import { pageMetadata } from "@/lib/pageMetadata";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 
-export const metadata: Metadata = {
-  title: "Privacy Policy",
-  description: "How Top Tier collects, uses, and protects your information, including newsletter signups, writer accounts, cookies, and advertising.",
-  alternates: { canonical: "/privacy" },
-  robots: { index: false },
-};
+export const metadata = pageMetadata("Privacy Policy", "How Top Tier collects, uses, and protects your information, including newsletter signups, writer accounts, cookies, and advertising.", "/privacy");
 
 export default function PrivacyPage() {
   return (

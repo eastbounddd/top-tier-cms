@@ -1,5 +1,7 @@
 "use client";
 
+import { articleCoverAlt } from "@/lib/articleCoverAlt";
+import { writerPath } from "@/lib/writerPaths";
 import Link from "next/link";
 import { useState, type ReactNode } from "react";
 import type { Article } from "@/components/ArticleCard";
@@ -15,7 +17,7 @@ export function NewsCard({ article, featured = false, secondary = false, basketb
   const Heading = featured ? "h2" : "h3";
   return <article className={`newsroom-card${featured ? " newsroom-featured" : ""}`}>
     <Link href={path} className="newsroom-photo" tabIndex={-1} aria-hidden="true">
-      <StoryImage src={article.cover_image_url} alt={article.title} fill quality={85}
+      <StoryImage src={article.cover_image_url} alt={articleCoverAlt(article)} fill quality={85}
         sizes={basketballBand ? "(max-width: 768px) 100vw, 320px" : featured ? "(max-width: 767px) 100vw, 55vw" : secondary ? "(max-width: 1023px) 280px, 33vw" : "(max-width: 767px) 280px, 33vw"}
         priority={featured} />
     </Link>
@@ -26,7 +28,7 @@ export function NewsCard({ article, featured = false, secondary = false, basketb
       <Heading><Link href={path}>{article.title}</Link></Heading>
       {article.excerpt && <p>{article.excerpt}</p>}
       <div className="newsroom-card-footer">
-        {author && <span>{!secondary && "By "}{article.writer ? <Link href={`/author/${article.writer.slug}`}>{author}</Link> : author}</span>}
+        {author && <span>{!secondary && "By "}{article.writer ? <Link href={writerPath(article.writer.slug)}>{author}</Link> : author}</span>}
         {secondary ? date && <time dateTime={article.published_at ?? undefined}>{author && "· "}{date}</time>
           : <Link href={path} tabIndex={-1} aria-hidden="true">{featured ? "Read Story →" : "Read →"}</Link>}
       </div>

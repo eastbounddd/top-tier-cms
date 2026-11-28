@@ -1,5 +1,6 @@
 import { cache } from "react";
 import { editorialClient, schoolByName } from "@/lib/editorial";
+import { canonicalWriterSlug } from "@/lib/writerPaths";
 import type { Writer } from "@/lib/writers";
 
 export const writerSchool = (writer: Writer) => writer.coverage?.map(schoolByName).find(Boolean);
@@ -17,5 +18,5 @@ export const getWriter = cache(async (slug: string): Promise<Writer | null> => {
 export async function listWriters(): Promise<Writer[]> {
   const { data, error } = await editorialClient().from("writer_profiles").select("*").order("name");
   if (error) throw new Error(error.message);
-  return data ?? [];
+  return (data ?? []).filter(writer => canonicalWriterSlug(writer.slug) === writer.slug);
 }

@@ -1,3 +1,4 @@
+import { writerPath } from "@/lib/writerPaths";
 import Link from "next/link";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
@@ -19,7 +20,7 @@ export default async function WritersIndex() {
   const entries = writers.map(writer => {
     const school = writerSchool(writer), role = writerRole(writer), count = counts.get(writer.id) ?? 0;
     const beat = writer.coverage?.[0] || "College Sports";
-    const path = `/writers/${writer.slug}`;
+    const path = writerPath(writer.slug);
     return { id: writer.id, searchable: [writer.name, writer.title, ...(writer.coverage || [])].filter(Boolean).join(" "), filters: [role],
       card: <article className="directory-card writer-directory-card" style={schoolTheme(school?.slug)}>
         <WriterAvatar source={writer.profile_image} name={writer.name} />

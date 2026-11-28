@@ -52,7 +52,7 @@ export async function stories({ school, football, basketball, recruiting, catego
   school?: string; football?: boolean; basketball?: boolean; recruiting?: boolean; category?: string; titleContains?: string; writerId?: string; limit?: number | null;
 } = {}): Promise<Article[]> {
   const db = editorialClient();
-  let query = db.from("articles").select("id,slug,title,excerpt,cover_image_url,category,school,published_at,is_top_story,writer_profile_id,byline:body->>author_name,author_name").or(publicArticles());
+  let query = db.from("articles").select("id,slug,title,excerpt,cover_image_url,category,school,published_at,is_top_story,writer_profile_id,byline:body->>author_name,cover_alt:body->>cover_alt,cover_caption:body->>cover_caption,author_name").or(publicArticles());
   if (school === "LSU") {
     // Legacy LSU coverage predates school tags. Include LSU headlines only when no school is set.
     query = query.or('school.ilike.lsu,body->>secondary_school.eq.LSU,and(or(school.is.null,school.eq.""),title.ilike.%LSU%)');
@@ -75,7 +75,7 @@ export async function stories({ school, football, basketball, recruiting, catego
   return attachWriters(db, rows.map(row => ({
     ...row,
     school: school === "LSU" ? school : row.school,
-    body: { author_name: row.byline || row.author_name || undefined },
+    body: { author_name: row.byline || row.author_name || undefined, cover_alt: row.cover_alt, cover_caption: row.cover_caption },
   })));
 }
 

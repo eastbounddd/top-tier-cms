@@ -1,12 +1,8 @@
-import type { Metadata } from "next";
+import { pageMetadata } from "@/lib/pageMetadata";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 
-export const metadata: Metadata = {
-  title: "About",
-  description: "Learn about Top Tier, Top Tier Media's college sports site for college football news, analysis, graphics, and original reporting.",
-  alternates: { canonical: "/about" },
-};
+export const metadata = pageMetadata("About", "Learn about Top Tier, Top Tier Media's college sports site for college football news, analysis, graphics, and original reporting.", "/about");
 
 export default function AboutPage() {
   return (

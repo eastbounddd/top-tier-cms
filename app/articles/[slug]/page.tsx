@@ -1,3 +1,6 @@
+import { articleSponsorship, tagSponsoredLinks } from "@/lib/articleSponsorship";
+import { articleCoverAlt } from "@/lib/articleCoverAlt";
+import { writerPath } from "@/lib/writerPaths";
 import { KeyTakeaways } from "@/components/KeyTakeaways";
 import { withFollowPromo } from "@/lib/articleBlocks";
 import { publicArticles } from "@/lib/articleWorkflow";
@@ -56,7 +59,7 @@ export async function generateMetadata({
   const canonical = siteUrl + articlePath(data.slug);
   const image = getArticleImage(data);
   const socialImage = getSocialImageUrl(data.slug, image);
-  const imageAlt = typeof data.body?.cover_alt === "string" && data.body.cover_alt.trim() ? data.body.cover_alt : data.title;
+  const imageAlt = articleCoverAlt(data);
   const description =
     data.excerpt?.replace(/[#\p{Extended_Pictographic}]/gu, "").replace(/\s+/g, " ").trim().slice(0,160) ||
     "Read the latest college football news, analysis and original reporting from Top Tier.";
@@ -114,7 +117,9 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
   const taggedSchools = [...new Set([data.school, data.body?.secondary_school].filter((name): name is string =>
     typeof name === "string" && Boolean(name.trim())))];
   const handle = writer ? writerXHandle(writer) : null;
-  const coverAlt = typeof data.body?.cover_alt === "string" && data.body.cover_alt.trim() ? data.body.cover_alt : data.title;
+  const coverAlt = articleCoverAlt(data);
+  const { sponsored, name: partnerName } = articleSponsorship(data);
+  const articleHtml = withFollowPromo(body, data.body?.auto_follow === true);
   const football = { name: "College Football", path: "/college-football" };
   const topic = school ? { name: school.name, path: `/schools/${school.slug}` } :
     data.school === "Recruiting" || data.category === "Recruiting" ? { name: "Recruiting", path: "/recruiting" } :
@@ -146,7 +151,7 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
     headline: data.title, description: data.excerpt || (takeaways[0] ? Object.values(takeawayLead(takeaways[0])).join("") : data.title),
     image: [{ "@type": "ImageObject", url: socialImage, width: coverWidth, height: coverHeight }],
     datePublished: published, dateModified: modified,
-    author: [{ "@type": /^@?tops*tier/i.test(author) ? "Organization" : "Person", name: author, ...(writer ? { url: `${siteUrl}/author/${writer.slug}` } : {}) }],
+    author: [{ "@type": /^@?tops*tier/i.test(author) ? "Organization" : "Person", name: author, ...(writer ? { url: siteUrl + writerPath(writer.slug) } : {}) }],
     publisher: { "@type": "Organization", ...organization, name: "Top Tier Media" }, mainEntityOfPage: canonical,
     ...(taggedSchools.length ? { about: taggedSchools.map(name => ({ "@type": "Thing", name })), keywords: taggedSchools.join(", ") } : {}),
   };
@@ -160,11 +165,14 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
       <div className="editorial-article-grid">
         <article className="reading-column">
           <Link className="editorial-pill" href={topic.path}>{topic.name}</Link>
-          {data.is_sponsored && <p className="sponsored-disclosure">This article is sponsored content.</p>}
+
           <h1>{data.title}</h1>
+          {sponsored && <p className="sponsored-disclosure"><strong>Partner content.</strong>{" "}
+            {partnerName ? `This article is sponsored by ${partnerName}.` : "This article is sponsored."} Top Tier may earn a commission.
+          </p>}
           {data.excerpt && <p className="editorial-dek">{data.excerpt}</p>}
           <div className="editorial-byline">
-            <div>By {writer ? <Link href={`/author/${writer.slug}`}>{author}</Link> : <strong>{author}</strong>}
+            <div>By {writer ? <Link href={writerPath(writer.slug)}>{author}</Link> : <strong>{author}</strong>}
               <div className="editorial-dates">
                 {published && <span>Published <time dateTime={published}>{editorialDate(published, true)}</time></span>}
                 {modified && modified !== published && <span>Updated <time dateTime={modified}>{editorialDate(modified, true)}</time></span>}
@@ -188,7 +196,7 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
             </section>}
             <nav className="rank-jumps" aria-label="Jump to rank"><ul>{rankLinks}</ul></nav>
           </> : null}
-          <RenderedArticleContent html={withFollowPromo(body, data.body?.auto_follow === true)} className="prose editorial-prose" />
+          <RenderedArticleContent html={sponsored ? tagSponsoredLinks(articleHtml, partnerName) : articleHtml} className="prose editorial-prose" />
           {writer && <WriterCard writer={writer} />}
         </article>
         <aside className="editorial-rail">

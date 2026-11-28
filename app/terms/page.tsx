@@ -1,13 +1,8 @@
-import type { Metadata } from "next";
+import { pageMetadata } from "@/lib/pageMetadata";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 
-export const metadata: Metadata = {
-  title: "Terms of Use",
-  description: "Terms of Use for toptierstate.net, including acceptable use, content rights, writer submissions, and disclaimers.",
-  alternates: { canonical: "/terms" },
-  robots: { index: false },
-};
+export const metadata = pageMetadata("Terms of Use", "Terms of Use for toptierstate.net, including acceptable use, content rights, writer submissions, and disclaimers.", "/terms");
 
 export default function TermsPage() {
   return (

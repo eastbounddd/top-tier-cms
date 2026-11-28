@@ -16,6 +16,7 @@ import { isXStatusUrl, renderStandaloneXLinks } from "@/lib/renderXLinks";
 
 import { ArticlePicker, PromoEditor, schoolPromo, type SearchResult } from "@/components/ArticleInsertDialogs";
 import { escapeHtml, followPromo, promoHtml, safeArticleUrl, videoHtml, withFollowPromo, type Promo } from "@/lib/articleBlocks";
+import { articleSponsorship } from "@/lib/articleSponsorship";
 import { KeyTakeaways } from "@/components/KeyTakeaways";
 import { articlePresentation, authoredTakeaways, takeawayMax, takeawayMin, takeawaySoftLimit } from "@/lib/articlePresentation";
 import { PreferredSource } from "@/components/PreferredSource";
@@ -73,7 +74,7 @@ export function ArticleEditor({ initialId, editorRole, displayName }: {
   const [savedAt, setSavedAt] = useState("");
   const [tab, setTab] = useState("Article");
   const [metadata, setMetadata] = useState({
-    cover_alt: "", cover_credit: "", cover_width: 0, secondary_school: "", keyTakeaways: [] as string[],
+    cover_alt: "", cover_credit: "", partner_name: "", cover_width: 0, secondary_school: "", keyTakeaways: [] as string[],
     auto_follow: false, preferred_source: true,
   });
   const updatedAt = useRef<string | null>(null);
@@ -152,6 +153,7 @@ export function ArticleEditor({ initialId, editorRole, displayName }: {
           return;
         }
 
+        const partner = articleSponsorship(data);
         updatedAt.current = data.updated_at ?? null;
         setForm({
           title: data.title || "",
@@ -161,7 +163,7 @@ export function ArticleEditor({ initialId, editorRole, displayName }: {
           school: data.school || "",
           cover_image_url: data.cover_image_url || "",
           is_top_story: Boolean(data.is_top_story),
-          is_sponsored: Boolean(data.is_sponsored),
+          is_sponsored: partner.sponsored,
           status: data.status === "pending_review" ? "ready_for_review" : data.status || "draft",
         });
 
@@ -173,11 +175,13 @@ export function ArticleEditor({ initialId, editorRole, displayName }: {
         const body = data.body;
         if (body && typeof body === "object") {
           setMetadata({
-            cover_alt: body.cover_alt || "", cover_credit: body.cover_credit || "",
+            cover_alt: body.cover_alt || "", cover_credit: body.cover_credit || "", partner_name: partner.name,
             cover_width: Number(body.cover_width) || 0, secondary_school: body.secondary_school || "",
             keyTakeaways: authoredTakeaways(body),
             auto_follow: body.auto_follow === true, preferred_source: body.preferred_source !== false,
           });
+        } else {
+          setMetadata(current => ({ ...current, partner_name: partner.name }));
         }
         if (data.status === "scheduled" && data.published_at) {
           setSchedule(new Intl.DateTimeFormat("sv-SE", { timeZone: "America/Chicago", dateStyle: "short", timeStyle: "short" })
@@ -700,6 +704,7 @@ const deleteArticle = async () => {
             .replace(/<h1\b[^>]*>/gi, "")
             .replace(/<\/h1>/gi, ""),
           ...metadata,
+          partner_name: metadata.partner_name.trim(),
           keyTakeaways: metadata.keyTakeaways.map(text => text.trim()).filter(Boolean),
           secondary_school: metadata.secondary_school === form.school ? "" : metadata.secondary_school,
           author_name: authorName.trim(),
@@ -970,7 +975,8 @@ const deleteArticle = async () => {
           <label>URL Slug <input value={form.slug} placeholder={slugify(form.title)} onChange={e => setForm(f => ({ ...f, slug: slugify(e.target.value) }))} /></label>
           {!writerId && <label>Author Name <input value={authorName} onChange={e => setAuthorName(e.target.value)} /></label>}
           <label className="check"><input type="checkbox" checked={form.is_top_story} onChange={e => setForm(f => ({ ...f, is_top_story: e.target.checked }))} />Feature in Top Stories</label>
-          <label className="check"><input type="checkbox" checked={form.is_sponsored} onChange={e => setForm(f => ({ ...f, is_sponsored: e.target.checked }))} />Sponsored content</label>
+          <label className="check"><input type="checkbox" checked={form.is_sponsored} onChange={e => setForm(f => ({ ...f, is_sponsored: e.target.checked }))} />Sponsored / partner content</label>
+          {form.is_sponsored && <label>Partner name (optional)<input value={metadata.partner_name} onChange={e => setMeta("partner_name", e.target.value)} /></label>}
           <label className="check"><input type="checkbox" checked={metadata.auto_follow} onChange={e => setMeta("auto_follow", e.target.checked)} />Auto-insert mid-article Follow @TopTierStateX card</label>
           <label className="check"><input type="checkbox" checked={metadata.preferred_source} onChange={e => setMeta("preferred_source", e.target.checked)} />Show Google Preferred Source card</label>
         </details>

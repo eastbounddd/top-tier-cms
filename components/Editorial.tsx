@@ -1,3 +1,5 @@
+import { articleCoverAlt } from "@/lib/articleCoverAlt";
+import { writerPath } from "@/lib/writerPaths";
 import Image from "next/image";
 import Link from "next/link";
 import type { Article } from "@/components/ArticleCard";
@@ -35,7 +37,7 @@ export async function LiveBoards({ id, light = false }: { id?: string; light?: b
 }
 
 export function EditorialThumbnail({ article, className, sizes }: { article: Article; className: string; sizes: string }) {
-  return <span className={`editorial-thumb ${className}`}><StoryImage src={article.cover_image_url} alt="" fill sizes={sizes} quality={85} /></span>;
+  return <span className={`editorial-thumb ${className}`}><StoryImage src={article.cover_image_url} alt={articleCoverAlt(article)} fill sizes={sizes} quality={85} /></span>;
 }
 
 export function MoreStories({ title, articles, expanded = false }: { title: string; articles: Article[]; expanded?: boolean }) {
@@ -110,7 +112,7 @@ export function Story({ article, lead = false, schoolLead = false }: { article: 
   const Heading = lead ? "h2" : "h3";
   return <article className={schoolLead ? "editorial-story lead-story school-lead" : lead ? "editorial-story lead-story" : "editorial-story"}>
     <Link href={path} className="story-image" tabIndex={-1} aria-hidden="true">
-      <StoryImage src={article.cover_image_url} alt={article.title} fill priority={lead} fetchPriority={lead ? "high" : undefined}
+      <StoryImage src={article.cover_image_url} alt={articleCoverAlt(article)} fill priority={lead} fetchPriority={lead ? "high" : undefined}
         sizes={lead ? "(max-width: 760px) 100vw, 720px" : "(max-width: 560px) 100vw, (max-width: 900px) 50vw, 360px"} />
     </Link>
     <div className="story-copy">
@@ -118,7 +120,7 @@ export function Story({ article, lead = false, schoolLead = false }: { article: 
       <Heading><Link href={path}>{article.title}</Link></Heading>
       {article.excerpt && <p>{article.excerpt}</p>}
       <div className="story-meta">
-        {article.writer ? <Link href={`/author/${article.writer.slug}`}>{article.writer.name}</Link> : typeof article.body === "object" && article.body?.author_name}
+        {article.writer ? <Link href={writerPath(article.writer.slug)}>{article.writer.name}</Link> : typeof article.body === "object" && article.body?.author_name}
         {article.published_at && <time dateTime={article.published_at}>{editorialDate(article.published_at)}</time>}
         {schoolLead && article.school && <strong className="school-story-label">{article.school}</strong>}
       </div>
@@ -131,7 +133,7 @@ export function SchoolStoryList({ articles }: { articles: Article[] }) {
     <small>{article.category}</small>
     <h3><Link href={articlePath(article.slug)}>{article.title}</Link></h3>
     <div className="story-meta">
-      {article.writer ? <Link href={`/author/${article.writer.slug}`}>{article.writer.name}</Link> : typeof article.body === "object" && article.body?.author_name}
+      {article.writer ? <Link href={writerPath(article.writer.slug)}>{article.writer.name}</Link> : typeof article.body === "object" && article.body?.author_name}
       {article.published_at && <time dateTime={article.published_at}>{editorialDate(article.published_at)}</time>}
     </div>
   </article>)}</div>;

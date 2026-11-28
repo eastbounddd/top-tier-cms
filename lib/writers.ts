@@ -1,6 +1,11 @@
 ﻿import type { SupabaseClient } from "@supabase/supabase-js";
 
 export type Writer = { id: string; slug: string; name: string; profile_image: string | null; coverage: string[]; x_handle: string | null; bio: string; title: string | null; joined_date: string | null };
+export function publicWriterBio(value?: string | null) {
+  const bio = value?.trim();
+  return bio && !/profile details are awaiting editorial review|^TODO/i.test(bio) ? bio : undefined;
+}
+
 export const writerImage = (writer: Writer) => writer.profile_image || "/top-tier-logo.png";
 export function writerXHandle(writer: Writer) {
   const handle = writer.x_handle?.trim().replace(/^@/, "");
